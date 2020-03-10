@@ -1,0 +1,4 @@
+[submodule "site"]
+	path = site
+	url = git@github.com:dannypsnl/llvm-doc.git
+	branch = gh-pages
