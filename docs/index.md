@@ -38,4 +38,12 @@ Working under pure Go environment and start your journey.
 
 ## Installation
 
-`go get github.com/llir/llvm`
+To install [llir/llvm](https://github.com/llir/llvm), all you need to do is: `go get github.com/llir/llvm`.
+
+## Usage
+
+According to packages, [llir/llvm](https://github.com/llir/llvm) can be separated to two main parts:
+
+1. `asm`: This package implements a parser for LLVM IR assembly files. Users can use it for analyzing LLVM IR files.
+2. `ir`: This package declares the types used to represent LLVM IR modules. Users can use it for build LLVM IR modules and operating on them.
+
