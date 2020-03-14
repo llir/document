@@ -1,4 +1,4 @@
-# Basic introduction
+# Basic Introduction
 
 ## Module
 
@@ -53,8 +53,8 @@ func main() {
 	funcMain := m.NewFunc(
 		"main",
 		types.I32,
-	)
-	mb := funcMain.NewBlock("")
+	)  // omit parameters
+	mb := funcMain.NewBlock("") // llir/llvm would give correct default name for block without name
 	mb.NewCall(funcAdd, constant.NewInt(types.I32, 1), mb.NewLoad(types.I32, globalG))
 	mb.NewRet(constant.NewInt(types.I32, 0))
 
@@ -126,3 +126,35 @@ To get more information, goto [Block API document](https://pkg.go.dev/github.com
 
 Instruction is a set of operations on assembly abstraction level to operate on an abstract machine model.
 To get more information, goto [LLVM Language Reference Manual: instruction reference](https://llvm.org/docs/LangRef.html#instruction-reference).
+
+## Type
+
+There are many types in LLVM type system, here focus on how to create a new type.
+
+```go
+m := ir.NewModule()
+
+m.NewTypeDef("foo", types.NewStruct(types.I32))
+```
+
+Above code would produce:
+
+```llvm
+%foo = type { i32 }
+```
+
+It could map to C code:
+
+```c
+struct foo {
+  int x;
+};
+```
+
+Notice in LLVM, structure field has no name.
+
+## Conclusion
+
+Hope previous sections provide enough information about how to get enough information to dig into details.
+We will not dig into the details of each instruction, instead of that, we would provide a whole picture about how to use the library.
+Therefore, the next section is a list of common high-level concept and how to map them to IR.

@@ -1,4 +1,9 @@
 site_name: llir/llvm
 theme: readthedocs
+nav:
+    - Home: 'index.md'
+    - 'User Guide':
+        - 'Basic Introduction': 'user-guide/basic.md'
+        - 'High Level Types': 'user-guide/types.md'
 markdown_extensions:
     - markdown_inline_graphviz
