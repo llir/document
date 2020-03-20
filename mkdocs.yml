@@ -4,6 +4,7 @@ nav:
     - Home: 'index.md'
     - 'User Guide':
         - 'Basic Introduction': 'user-guide/basic.md'
+        - 'More Function': 'user-guide/funcs.md'
         - 'High Level Types': 'user-guide/types.md'
 markdown_extensions:
     - markdown_inline_graphviz
