@@ -2,16 +2,16 @@
 
 ## Module
 
-A LLVM IR file is a module. A module owns many global level components:
+An LLVM IR file is a module. A module has many top-level entities:
 
-- global variable
-- function
-- type
+- global variables
+- functions
+- types
 - metadata
 
-In this basic introduction, we don't dig into metadata, but focus on what can we do with global variable, function, and type.
+In this basic introduction, we won't dig into metadata, but instead focus on what we can do with global variables, functions, and types.
 
-[llir/llvm](https://github.com/llir/llvm) provides package `ir` for these concepts, let's see what can a C program being translated to LLVM IR using [llir/llvm](https://github.com/llir/llvm).
+[llir/llvm](https://github.com/llir/llvm) provides package [ir](https://pkg.go.dev/github.com/llir/llvm/ir?tab=doc) for these concepts. Let's see how a C program can be translated into LLVM IR using [llir/llvm](https://github.com/llir/llvm).
 
 C example:
 
@@ -22,8 +22,7 @@ int add(int x, int y) {
   return x + y;
 }
 int main() {
-  add(1, g);
-  return 0;
+  return add(1, g);
 }
 ```
 
@@ -55,8 +54,7 @@ func main() {
 		types.I32,
 	)  // omit parameters
 	mb := funcMain.NewBlock("") // llir/llvm would give correct default name for block without name
-	mb.NewCall(funcAdd, constant.NewInt(types.I32, 1), mb.NewLoad(types.I32, globalG))
-	mb.NewRet(constant.NewInt(types.I32, 0))
+	mb.NewRet(mb.NewCall(funcAdd, constant.NewInt(types.I32, 1), mb.NewLoad(types.I32, globalG)))
 
 	println(m.String())
 }
@@ -77,21 +75,21 @@ define i32 @main() {
 ; <label>:0
 	%1 = load i32, i32* @g
 	%2 = call i32 @add(i32 1, i32 %1)
-	ret i32 0
+	ret i32 %2
 }
 ```
 
-In this example, we have global variable and function, mapping to C code. Now we dig into global variable.
+In this example, we have one global variable and two functions, mapping to C code. Now let's dig into global variables.
 
 ## Global Variable
 
-Globals prefixed with `@` character.
-An important thing is globals in LLVM, is a pointer, so have to `load` for its value,`store` to update its value.
+In LLVM IR assembly, the identifier of global variables are prefixed with an `@` character.
+Importantly, global variables are represented in LLVM as pointers, so we have to use [load](https://pkg.go.dev/github.com/llir/llvm/ir?tab=doc#InstLoad) to retreive the value and [store](https://pkg.go.dev/github.com/llir/llvm/ir?tab=doc#InstStore) to update the value of a global variable.
 
 ## Function
 
-As globals, function name prefixed with `@` character. Function composed by prototype and a group of basic blocks.
-If there has no basic block, then a function is a declaration, the following code would generate a declaration:
+Like globals, in LLVM IR assembly the identifier of functions are prefixed with an `@` character. Functions are composed by a function prototype prototype and a group of basic blocks.
+A funciton without basic blocks is a function declaration. The following code would generate a function declaration:
 
 ```go
 m.NewFunc(
@@ -108,28 +106,29 @@ Output:
 declare i32 @add(i32, i32)
 ```
 
-When we want to bind to existed function in others object files, we would create a declaration.
+When we want to bind to existing functions defined in other object files, we would create function declarations.
 
-### Prototype
+### Function Prototype
 
-Prototype means parameters and return type.
+A function prototype or function signature defines the parameters and return type of a function.
 
 ### Basic Block
 
-If function is group of basic blocks, then basic blocks is a group of instructions.
-An important thing is most high-level expression would break down into few instructions.
+If function is group of basic blocks, then a basic block is a group of instructions. The basic notion behind a basic block is that if any instruction of a basic block is executed, then all instructions of the basic block are executed. In other words, there may be no branching or terminating instruction in the middle of a basic block, and all incoming branches must transfer control flow to the first instruction of the basic block.
+
+It is worthwhile to note that most high-level expression would be lowered into a set of instructions, covering one or more basic blocks.
 
 [llir/llvm](https://github.com/llir/llvm) provides API to create instructions by a basic block.
-To get more information, goto [Block API document](https://pkg.go.dev/github.com/llir/llvm@v0.3.0/ir?tab=doc#Block).
+For further information, refer to the [Block API documentation](https://pkg.go.dev/github.com/llir/llvm/ir?tab=doc#Block).
 
 ### Instruction
 
-Instruction is a set of operations on assembly abstraction level to operate on an abstract machine model.
-To get more information, goto [LLVM Language Reference Manual: instruction reference](https://llvm.org/docs/LangRef.html#instruction-reference).
+An instruction is a set of operations on assembly abstraction level which operate on an abstract machine model, as defined by LLVM.
+For further information, refer to the [Instruction Reference section of the LLVM Language Reference Manual](https://llvm.org/docs/LangRef.html#instruction-reference).
 
 ## Type
 
-There are many types in LLVM type system, here focus on how to create a new type.
+There are many types in LLVM type system, here we focus on how to create a new type.
 
 ```go
 m := ir.NewModule()
@@ -137,24 +136,24 @@ m := ir.NewModule()
 m.NewTypeDef("foo", types.NewStruct(types.I32))
 ```
 
-Above code would produce:
+The above code would produce the following IR:
 
 ```llvm
 %foo = type { i32 }
 ```
 
-It could map to C code:
+Which could be mapped to the following C code:
 
 ```c
-struct foo {
+typedef struct {
   int x;
-};
+} foo;
 ```
 
-Notice in LLVM, structure field has no name.
+Notice that in LLVM, structure fields have no name.
 
 ## Conclusion
 
-Hope previous sections provide enough information about how to get enough information to dig into details.
-We will not dig into the details of each instruction, instead of that, we would provide a whole picture about how to use the library.
+We hope that the previous sections have provide enough information about how to get use the documentation to dig into details.
+We will not dig into the details of each instruction; instead, we aim to provide a whole picture about how to use the library.
 Therefore, the next section is a list of common high-level concept and how to map them to IR.

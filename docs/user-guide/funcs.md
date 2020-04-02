@@ -9,14 +9,14 @@ m := ir.NewModule()
 
 add := m.NewFunc("add", types.I64, ir.NewParam("", types.I64))
 add.Linkage = enum.LinkageInternal
-add = m.NewFunc("add1", types.I64, ir.NewParam("", types.I64))
-add.Linkage = enum.LinkageLinkOnce
-add = m.NewFunc("add2", types.I64, ir.NewParam("", types.I64))
-add.Linkage = enum.LinkagePrivate
-add = m.NewFunc("add3", types.I64, ir.NewParam("", types.I64))
-add.Linkage = enum.LinkageWeak
-add = m.NewFunc("add4", types.I64, ir.NewParam("", types.I64))
-add.Linkage = enum.LinkageExternal
+add1 := m.NewFunc("add1", types.I64, ir.NewParam("", types.I64))
+add1.Linkage = enum.LinkageLinkOnce
+add2 := m.NewFunc("add2", types.I64, ir.NewParam("", types.I64))
+add2.Linkage = enum.LinkagePrivate
+add3 := m.NewFunc("add3", types.I64, ir.NewParam("", types.I64))
+add3.Linkage = enum.LinkageWeak
+add4 := m.NewFunc("add4", types.I64, ir.NewParam("", types.I64))
+add4.Linkage = enum.LinkageExternal
 ```
 
 The code would produce:
@@ -33,11 +33,11 @@ declare weak i64 @add3(i64)
 declare external i64 @add4(i64)
 ```
 
-To get more information about linkage, read [llvm doc](https://llvm.org/docs/LangRef.html#linkage-types) and [pkg.go.dev](https://pkg.go.dev/github.com/llir/llvm/ir/enum?tab=doc#Linkage).
+For further information about linkage, refer to [LLVM doc](https://llvm.org/docs/LangRef.html#linkage-types) and [pkg.go.dev](https://pkg.go.dev/github.com/llir/llvm/ir/enum?tab=doc#Linkage).
 
-### Variant Argument(a.k.a. VAArg)
+### Variant Argument (a.k.a. VAArg)
 
-One example is `printf`:
+One example of a variadic function is `printf`. This is how to create a function prototype for `printf`:
 
 ```go
 m := ir.NewModule()
@@ -50,7 +50,7 @@ printf := m.NewFunc(
 printf.Sig.Variadic = true
 ```
 
-The code would produce:
+The above code would produce the following IR:
 
 ```llvm
 declare i32 @printf(i8*, ...)
@@ -58,4 +58,4 @@ declare i32 @printf(i8*, ...)
 
 ### Function Overloading
 
-There has no overloading in IR, therefore solution is creating two functions.
+There is no overloading in LLVM IR. One solution is to create one function per function signature, where each LLVM IR function would have a unique name (this is why C++ compilers do name mangling).

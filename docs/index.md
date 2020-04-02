@@ -4,7 +4,7 @@
 
 #### Why LLVM?
 
-When creating a compiler, a classical design looks like this:
+When creating a compiler, a classical design may look like this:
 
 {% dot attack_plan.svg
 digraph hierarchy {
@@ -14,9 +14,11 @@ digraph hierarchy {
 }
 %}
 
-This is quite good in old days. There has only one input language, and one target machine.
+This worked quite well in the old days. There was only one input language, and one target machine.
 
-But there has more and more target machines have to support! Therefore, we need LLVM. Here is the new design:
+Today there exist a lot of target machines to support! And a lot of input languages. Without a shared representation many parts of the compiler would have to be reimplemented for every input/output pair.
+
+LLVM offers a solution to this problem by defining such a shared representation, namely LLVM IR. Here is the new design:
 
 {% dot attack_plan.svg
 digraph hierarchy {
@@ -28,13 +30,13 @@ digraph hierarchy {
 }
 %}
 
-Now we only have to focus on our frontend and optimizer! Thanks you, Chris Lattner and who had work for LLVM.
+To write a compiler for a new language, now we only have to focus on our frontend. Similarly, to add support for a new target machine, now we only have to add a new backend. And to improve the code generation of all input/output pairs, now we only have to focus on the middle end optimizer. Thank you, Chris Lattner and all those who have contributed to LLVM.
 
 #### Why llir/llvm?
 
-The target of [llir/llvm](https://github.com/llir/llvm) is: interact in Go with LLVM IR without binding with LLVM.
-Therefore, you don't have to compile LLVM(could take few hours), no fighting with cgo.
-Working under pure Go environment and start your journey.
+The aim of [llir/llvm](https://github.com/llir/llvm) is to provide a library for interacting with LLVM IR in pure Go. Importantly, `llir/llvm` is not a binding for LLVM.
+Therefore, you don't have to compile LLVM (which could take a few hours), and no need to fight with Cgo.
+Work under a pure Go environment and start your journey.
 
 ## Installation
 
@@ -42,8 +44,7 @@ To install [llir/llvm](https://github.com/llir/llvm), all you need to do is: `go
 
 ## Usage
 
-According to packages, [llir/llvm](https://github.com/llir/llvm) can be separated to two main parts:
+According to packages, [llir/llvm](https://github.com/llir/llvm) can be separated into two main parts:
 
-1. `asm`: This package implements a parser for LLVM IR assembly files. Users can use it for analyzing LLVM IR files.
-2. `ir`: This package declares the types used to represent LLVM IR modules. Users can use it for build LLVM IR modules and operating on them.
-
+1. [asm](https://pkg.go.dev/github.com/llir/llvm/asm?tab=doc): This package implements a parser for LLVM IR assembly files. Users can use it for analyzing LLVM IR files.
+2. [ir](https://pkg.go.dev/github.com/llir/llvm/ir?tab=doc): This package declares the types used to represent LLVM IR modules. Users can use it for build LLVM IR modules and operating on them.
