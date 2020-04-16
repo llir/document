@@ -9,7 +9,7 @@ pip3 install markdown_inline_graphviz_extension --user
 # local test
 mkdocs serve
 # Clone repo again to `site/`
-git clone git@github.com:dannypsnl/llvm-doc.git site
+git clone git@github.com:dannypsnl/document.git site
 # checkout to deploy branch
 cd site && git checkout gh-pages
 cd ..
