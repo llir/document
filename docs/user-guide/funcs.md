@@ -165,3 +165,46 @@ The naive implementation is not good enough, we have several ways can improve it
 - Access cross asynchronous model
 - If language has copy capture and reference capture, e.g. C++?
 - What if working with a GC?
+
+### Return Structure
+
+When meet program that return structure by value, compiler has chance to remove such cloning. That's storing return structure into a reference passed by the caller. Which means, if we get:
+
+```c
+struct Foo {
+    // ...
+};
+
+Foo foo() {
+    Foo f;
+    // ...
+    return f;
+}
+```
+
+should compile to:
+
+```llvm
+define void @foo(%Foo* noalias sret f) {
+    // ...
+}
+```
+
+- `sret` hints this is a return value.
+- `noalias` hints other arguments won't point to the same place, LLVM optimizer might rely on such fact, so don't add it everywhere.
+
+#### Add parameter attributes
+
+Here is example shows how to add parameter attributes:
+
+```go
+m := ir.NewModule()
+
+fooTyp := m.NewTypeDef("Foo", types.NewStruct(
+	types.I32,
+))
+retS := ir.NewParam("result", fooTyp)
+retS.Attrs = append(retS.Attrs, enum.ParamAttrNoAlias)
+retS.Attrs = append(retS.Attrs, enum.ParamAttrSRet)
+m.NewFunc("foo", types.Void, retS)
+```
