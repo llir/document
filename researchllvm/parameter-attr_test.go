@@ -6,6 +6,8 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
+
+	"github.com/dannypsnl/researchllvm/helper"
 )
 
 func TestParameterAttr(t *testing.T) {
@@ -19,7 +21,7 @@ func TestParameterAttr(t *testing.T) {
 	retS.Attrs = append(retS.Attrs, enum.ParamAttrSRet)
 	m.NewFunc("foo", types.Void, retS)
 
-	PrettyPrint(m)
+	helper.PrettyPrint(m)
 }
 
 // generated LLVM IR:

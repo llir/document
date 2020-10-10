@@ -5,6 +5,8 @@ import (
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
+
+	"github.com/dannypsnl/researchllvm/helper"
 )
 
 func TestVAArg(t *testing.T) {
@@ -17,5 +19,5 @@ func TestVAArg(t *testing.T) {
 	)
 	printf.Sig.Variadic = true
 
-	PrettyPrint(m)
+	helper.PrettyPrint(m)
 }

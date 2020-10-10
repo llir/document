@@ -6,6 +6,8 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
+
+	"github.com/dannypsnl/researchllvm/helper"
 )
 
 func TestLinkage(t *testing.T) {
@@ -22,5 +24,5 @@ func TestLinkage(t *testing.T) {
 	add = m.NewFunc("add4", types.I64, ir.NewParam("", types.I64))
 	add.Linkage = enum.LinkageExternal
 
-	PrettyPrint(m)
+	helper.PrettyPrint(m)
 }

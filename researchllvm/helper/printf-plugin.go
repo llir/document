@@ -1,4 +1,4 @@
-package researchllvm
+package helper
 
 import (
 	"github.com/llir/llvm/ir"

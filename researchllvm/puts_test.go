@@ -6,6 +6,8 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
+
+	"github.com/dannypsnl/researchllvm/helper"
 )
 
 func TestPuts(t *testing.T) {
@@ -33,9 +35,9 @@ func TestPuts(t *testing.T) {
 	mainB.NewCall(puts, pointerToString)
 	mainB.NewRet(constant.NewInt(types.I32, 0))
 
-	PrettyPrint(mod)
+	helper.PrettyPrint(mod)
 
-	executeIR(mod)
+	helper.executeIR(mod)
 }
 
 // generated LLVM IR:

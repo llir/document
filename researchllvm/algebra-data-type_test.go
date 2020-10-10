@@ -6,6 +6,8 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
+
+	"github.com/dannypsnl/researchllvm/helper"
 )
 
 func TestAlgebraDataType(t *testing.T) {
@@ -42,7 +44,7 @@ func TestAlgebraDataType(t *testing.T) {
 	b.NewStore(constI32(2), exprIntValue)
 	b.NewRet(constI32(0))
 
-	PrettyPrint(mod)
+	helper.PrettyPrint(mod)
 }
 
 func constI8(v int64) constant.Constant {

@@ -6,6 +6,8 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
+
+	"github.com/dannypsnl/researchllvm/helper"
 )
 
 func TestMalloc(t *testing.T) {
@@ -33,7 +35,7 @@ func TestMalloc(t *testing.T) {
 	block.NewBitCast(mallocatedSpaceRaw, types.NewPointer(structType))
 	block.NewRet(constant.NewInt(types.I32, 0))
 
-	PrettyPrint(mod)
+	helper.PrettyPrint(mod)
 }
 
 // generated LLVM IR:
