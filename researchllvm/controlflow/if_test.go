@@ -6,7 +6,6 @@ import (
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 )
@@ -16,11 +15,6 @@ type EVoid struct{ Expr }
 type EBool struct {
 	Expr
 	V bool
-}
-type EEq struct {
-	// `==`
-	Expr
-	L, R Expr
 }
 
 type Stmt interface{ isStmt() Stmt }
@@ -43,8 +37,6 @@ func compileExpr(b *ir.Block, e Expr) value.Value {
 		} else {
 			return constant.NewInt(types.I1, 0)
 		}
-	case *EEq:
-		return b.NewICmp(enum.IPredEQ, compileExpr(b, e.L), compileExpr(b, e.R))
 	case *EVoid:
 		return nil
 	}
