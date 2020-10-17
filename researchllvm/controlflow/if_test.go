@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/dannypsnl/extend"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
@@ -46,12 +47,12 @@ func compileExpr(b *ir.Block, e Expr) value.Value {
 func compileStmt(f *ir.Func, bb *ir.Block, stmt Stmt) {
 	switch s := stmt.(type) {
 	case *SIf:
-		thenB := f.NewBlock("")
-		compileStmt(f, thenB, s.Then)
+		thenB := extend.Block(f.NewBlock(""))
+		compileStmt(f, thenB.Block, s.Then)
 		elseB := f.NewBlock("")
 		compileStmt(f, elseB, s.Else)
-		bb.NewCondBr(compileExpr(bb, s.Cond), thenB, elseB)
-		if thenB.Term == nil {
+		bb.NewCondBr(compileExpr(bb, s.Cond), thenB.Block, elseB)
+		if thenB.HasTerminator() {
 			leaveB := f.NewBlock("")
 			thenB.NewBr(leaveB)
 		}
