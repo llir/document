@@ -1,15 +1,17 @@
 package controlflow
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
+
+	"github.com/dannypsnl/researchllvm/helper"
 )
 
 func TestParameterAttr(t *testing.T) {
-	f := ir.NewFunc("foo", types.Void)
+	m := ir.NewModule()
+	f := m.NewFunc("foo", types.Void)
 	bb := f.NewBlock("")
 
 	compileStmt(bb, &SIf{
@@ -21,7 +23,7 @@ func TestParameterAttr(t *testing.T) {
 	// whatever what we did in compileStmt, we use convention that a block leave in the end is empty.
 	f.Blocks[len(f.Blocks)-1].NewRet(nil)
 
-	fmt.Println(f.LLString())
+	helper.PrettyPrint(m)
 }
 
 // generated LLVM IR:
