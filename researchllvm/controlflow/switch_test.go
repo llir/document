@@ -1,18 +1,16 @@
 package controlflow
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
-
-	"github.com/dannypsnl/researchllvm/helper"
 )
 
 func TestSwitch(t *testing.T) {
-	m := ir.NewModule()
-	main := m.NewFunc("foo", types.Void)
-	b := main.NewBlock("")
+	f := ir.NewFunc("foo", types.Void)
+	b := f.NewBlock("")
 
 	compileStmt(b, &SSwitch{
 		Target: &EBool{V: true},
@@ -25,5 +23,5 @@ func TestSwitch(t *testing.T) {
 		DefaultCase: &SRet{Val: &EVoid{}},
 	})
 
-	helper.PrettyPrint(m)
+	fmt.Println(f.LLString())
 }
