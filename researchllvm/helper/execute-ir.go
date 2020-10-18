@@ -8,7 +8,7 @@ import (
 	"github.com/llir/llvm/ir"
 )
 
-func executeIR(mod *ir.Module) {
+func ExecuteIR(mod *ir.Module) {
 	tmpIRName := "tmp.ll"
 	tmpIR, err := os.Create(tmpIRName)
 	if err != nil {

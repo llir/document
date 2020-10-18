@@ -37,7 +37,7 @@ func TestPuts(t *testing.T) {
 
 	helper.PrettyPrint(mod)
 
-	helper.executeIR(mod)
+	helper.ExecuteIR(mod)
 }
 
 // generated LLVM IR:
