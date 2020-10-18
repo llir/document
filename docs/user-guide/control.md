@@ -53,10 +53,10 @@ type SRet struct {
 
 First, we limit expression to `EBool` and `EVoid`, and statement to `SIf` and `SRet`, to get a simple subset to focus on our purpose. Then we can get transformers to generate control flow **if**.
 
-1. generate value for expression, `0` for `false`, non `0` for `true`
+1. generate value for constant, `0` for `false`, non `0` for `true`, `void` is `nil` in llir/llvm.
 
 ```go
-func compileExpr(b *ir.Block, e Expr) value.Value {
+func compileConstant(b *ir.Block, e Expr) constant.Constant {
     switch e := e.(type) {
     case *EBool:
    	    if e.V {
@@ -74,20 +74,21 @@ func compileExpr(b *ir.Block, e Expr) value.Value {
 2. use **conditional jump** to generate **if** statement
 
 ```go
-func compileStmt(f *ir.Func, bb *ir.Block, stmt Stmt) {
+func compileStmt(bb *ir.Block, stmt Stmt) {
+    f := bb.Parent
     switch s := stmt.(type) {
     case *SIf:
     	thenB := f.NewBlock("")
     	compileStmt(f, thenB, s.Then)
     	elseB := f.NewBlock("")
     	compileStmt(f, elseB, s.Else)
-    	bb.NewCondBr(compileExpr(bb, s.Cond), thenB, elseB)
+    	bb.NewCondBr(compileConstant(bb, s.Cond), thenB, elseB)
     	if thenB.Term == nil {
     		leaveB := f.NewBlock("")
     		thenB.NewBr(leaveB)
     	}
     case *SRet:
-    	bb.NewRet(compileExpr(bb, s.Val))
+    	bb.NewRet(compileConstant(bb, s.Val))
     }
 }
 ```
@@ -108,4 +109,46 @@ compileStmt(f, bb, &SIf{
 f.Blocks[len(f.Blocks)-1].NewRet(nil)
 ```
 
-We didn't support else-if directly at here, then we need to know how to handle this via parsing. First, we handle a sequence of `if` `(` `<expr>` `)` `<block>`. Ok, we can fill AST with `Cond` and `Then`, now we should get a token `else`, then we expect a `<block>` or `if`. When we get a `<block>` this is a obviously can be use as `Else`, else a `if` we keep parsing and use it as `Else` statement since `if` for sure is a statement. Of course, with this method, generated IR would have some useless label and jump, but flow analyzing should optimized them later, so it's fine.
+We didn't support else-if directly at here, then we need to know how to handle this via parsing. First, we handle a sequence of `if` `(` `<expr>` `)` `<block>`. Ok, we can fill AST with `Cond` and `Then`, now we should get a token `else`, then we expect a `<block>` or `if`. When we get a `<block>` this is a obviously can be use as `Else`, else a `if` we keep parsing and use it as `Else` statement since `if` for sure is a statement. Of course, with this method, generated IR would have some useless label and jump, but flow analyzing should optimize them later, so it's fine.
+
+### Switch
+
+LLVM has [switch instruction](https://llvm.org/docs/LangRef.html#switch-instruction), hence, we can use it directly.
+
+```go
+func compileStmt(bb *ir.Block, stmt Stmt) {
+    switch s := stmt.(type) {
+    /// ignore
+    case *SSwitch:
+        cases := []*ir.Case{}
+        for _, ca := range s.CaseList {
+            caseB := f.NewBlock("")
+            compileStmt(caseB, ca.Stmt)
+            cases = append(cases, ir.NewCase(compileConstant(ca.Expr), caseB))
+        }
+        defaultB := f.NewBlock("")
+        compileStmt(defaultB, s.DefaultCase)
+        b.NewSwitch(compileConstant(s.Target), defaultB, cases...)
+    }
+}
+```
+
+For every case, we generate a block, then we can jump to target. Then we put statements into case blocks. Finally, we generate switch for the input block. Notice that, switch instruction of LLVM won't generate `break` automatically, you can use the same trick in previous section **If** to generate auto leave block for each case(Go semantic), or record leave block and introduces break statement(C semantic). Now let's test it:
+
+```go
+f := ir.NewFunc("foo", types.Void)
+b := f.NewBlock("")
+
+compileStmt(b, &SSwitch{
+    Target: &EBool{V: true},
+    CaseList: []struct {
+        Expr
+        Stmt
+    }{
+        {Expr: &EBool{V: true}, Stmt: &SRet{Val: &EVoid{}}},
+    },
+    DefaultCase: &SRet{Val: &EVoid{}},
+})
+```
+
+The switch statement in this section is quite naive, for advanced semantic like pattern matching with extraction or where clause, you would need to do more.
