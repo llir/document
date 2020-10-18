@@ -5,7 +5,6 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
 )
 
 type Expr interface{ isExpr() Expr }
@@ -37,7 +36,7 @@ type SRet struct {
 	Val Expr
 }
 
-func compileExpr(e Expr) value.Value {
+func compileConstant(e Expr) constant.Constant {
 	switch e := e.(type) {
 	case *EBool:
 		if e.V {
@@ -56,22 +55,29 @@ func compileStmt(block *ir.Block, stmt Stmt) {
 	if !b.BelongsToFunc() {
 		return
 	}
+	f := b.Parent
 	switch s := stmt.(type) {
 	case *SIf:
-		f := b.Parent
 		thenB := extend.Block(f.NewBlock(""))
 		compileStmt(thenB.Block, s.Then)
 		elseB := f.NewBlock("")
 		compileStmt(elseB, s.Else)
-		b.NewCondBr(compileExpr(s.Cond), thenB.Block, elseB)
+		b.NewCondBr(compileConstant(s.Cond), thenB.Block, elseB)
 		if thenB.HasTerminator() {
 			leaveB := f.NewBlock("")
 			thenB.NewBr(leaveB)
 		}
 	case *SSwitch:
-		addr := constant.NewBlockAddress(b.Parent, b)
-		b.NewIndirectBr(addr)
+		cases := []*ir.Case{}
+		for _, ca := range s.CaseList {
+			caseB := f.NewBlock("")
+			compileStmt(caseB, ca.Stmt)
+			cases = append(cases, ir.NewCase(compileConstant(ca.Expr), caseB))
+		}
+		defaultB := f.NewBlock("")
+		compileStmt(defaultB, s.DefaultCase)
+		b.NewSwitch(compileConstant(s.Target), defaultB, cases...)
 	case *SRet:
-		b.NewRet(compileExpr(s.Val))
+		b.NewRet(compileConstant(s.Val))
 	}
 }
