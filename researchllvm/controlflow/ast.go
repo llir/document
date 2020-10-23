@@ -13,6 +13,10 @@ type EBool struct {
 	Expr
 	V bool
 }
+type EI32 struct {
+	Expr
+	V int64
+}
 
 type Stmt interface{ isStmt() Stmt }
 type SBreak struct{ Stmt }
@@ -31,6 +35,17 @@ type SSwitch struct {
 	}
 	DefaultCase Stmt
 }
+type SDoWhile struct {
+	Stmt
+	Cond  Expr
+	Block Stmt
+}
+type SDefine struct {
+	Stmt
+	Name string
+	Typ  types.Type
+	Expr Expr
+}
 type SRet struct {
 	Stmt
 	Val Expr
@@ -38,6 +53,9 @@ type SRet struct {
 
 func compileConstant(e Expr) constant.Constant {
 	switch e := e.(type) {
+	case *EI32:
+		return constant.NewInt(types.I32, e.V)
+
 	case *EBool:
 		if e.V {
 			return constant.NewInt(types.I1, 1)
@@ -77,6 +95,19 @@ func compileStmt(block *ir.Block, stmt Stmt) {
 		defaultB := f.NewBlock("")
 		compileStmt(defaultB, s.DefaultCase)
 		b.NewSwitch(compileConstant(s.Target), defaultB, cases...)
+	case *SDoWhile:
+		doB := b.Block
+		// if previous block is not empty, then we need to create new block for do-while loop
+		if b.Insts != nil {
+			doB = f.NewBlock("")
+		}
+		compileStmt(doB, s.Block)
+		leaveB := f.NewBlock("")
+		doB.NewCondBr(compileConstant(s.Cond), doB, leaveB)
+	case *SDefine:
+		v := b.NewAlloca(s.Typ)
+		v.SetName(s.Name)
+		b.NewStore(compileConstant(s.Expr), v)
 	case *SRet:
 		b.NewRet(compileConstant(s.Val))
 	}
