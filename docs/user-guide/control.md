@@ -116,9 +116,18 @@ We didn't support else-if directly at here, then we need to know how to handle t
 LLVM has [switch instruction](https://llvm.org/docs/LangRef.html#switch-instruction), hence, we can use it directly.
 
 ```go
+type SSwitch struct {
+    Stmt
+    Target   Expr
+    CaseList []struct {
+        Expr
+        Stmt
+    }
+    DefaultCase Stmt
+}
+
 func compileStmt(bb *ir.Block, stmt Stmt) {
     switch s := stmt.(type) {
-    /// ignore
     case *SSwitch:
         cases := []*ir.Case{}
         for _, ca := range s.CaseList {
@@ -133,7 +142,7 @@ func compileStmt(bb *ir.Block, stmt Stmt) {
 }
 ```
 
-For every case, we generate a block, then we can jump to target. Then we put statements into case blocks. Finally, we generate switch for the input block. Notice that, switch instruction of LLVM won't generate `break` automatically, you can use the same trick in previous section **If** to generate auto leave block for each case(Go semantic), or record leave block and introduces break statement(C semantic). Now let's test it:
+For every case, we generate a block, then we can jump to target. Then we put statements into case blocks. Finally, we generate switch for the input block. Notice that, switch instruction of LLVM won't generate `break` automatically, you can use the same trick in the previous section **If** to generate auto leave block for each case(Go semantic), or record leave block and introduces break statement(C semantic). Now let's test it:
 
 ```go
 f := ir.NewFunc("foo", types.Void)
@@ -152,3 +161,70 @@ compileStmt(b, &SSwitch{
 ```
 
 The switch statement in this section is quite naive, for advanced semantic like pattern matching with extraction or where clause, you would need to do more.
+
+### Loop
+
+#### Do While
+
+Do while is the simplest loop structure since it's code structure almost same to the IR structure. Here we go:
+
+```go
+type SDoWhile struct {
+	Stmt
+	Cond  Expr
+	Block Stmt
+}
+
+func compileStmt(block *ir.Block, stmt Stmt) {
+    switch s := stmt.(type) {
+    case *SDoWhile:
+        doB := b.Block
+        // if previous block is not empty, then we need to create new block for do-while loop
+        if b.Insts != nil {
+            doB = f.NewBlock("")
+        }
+        compileStmt(doB, s.Block)
+        leaveB := f.NewBlock("")
+        doB.NewCondBr(compileConstant(s.Cond), doB, leaveB)
+    }
+}
+```
+
+Can see that, first we check last block is empty or not, if it's empty we keep using it as do-while body. Then we have a leave block, in the end of the do-while body we jump out to leave block or body again depends on condition. Let's test it:
+
+```go
+f := ir.NewFunc("foo", types.Void)
+b := f.NewBlock("")
+
+compileStmt(b, &SDoWhile{
+    Cond: &EBool{V: true},
+    Block: &SDefine{
+        Stmt: nil,
+        Name: "foo",
+        Typ:  types.I32,
+        Expr: &EI32{V: 1},
+    },
+})
+
+f.Blocks[len(f.Blocks)-1].NewRet(nil)
+```
+
+`SDefine` is define for helping since terminator like `ret` would be remove when we put another terminator `condbr`, and return in a loop as an example is weird. Here is code generation for `SDefine`:
+
+```go
+type SDefine struct {
+	Stmt
+	Name string
+	Typ  types.Type
+	Expr Expr
+}
+
+func compileStmt(block *ir.Block, stmt Stmt) {
+    switch s := stmt.(type) {
+    case *SDefine:
+        v := b.NewAlloca(s.Typ)
+        v.SetName(s.Name)
+        b.NewStore(compileConstant(s.Expr), v)
+    }
+}
+```
