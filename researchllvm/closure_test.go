@@ -59,7 +59,7 @@ func TestClosure(t *testing.T) {
 
 	helper.PrettyPrint(m)
 
-	helper.executeIR(m)
+	helper.ExecuteIR(m)
 }
 
 // generated LLVM IR:
