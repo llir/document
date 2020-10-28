@@ -88,8 +88,8 @@ Importantly, global variables are represented in LLVM as pointers, so we have to
 
 ## Function
 
-Like globals, in LLVM IR assembly the identifier of functions are prefixed with an `@` character. Functions are composed by a function prototype prototype and a group of basic blocks.
-A funciton without basic blocks is a function declaration. The following code would generate a function declaration:
+Like globals, in LLVM IR assembly the identifier of functions are prefixed with an `@` character. Functions composed by a function prototype and a group of basic blocks.
+A function without basic blocks is a function declaration. The following code would generate a function declaration:
 
 ```go
 m.NewFunc(
