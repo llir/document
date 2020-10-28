@@ -39,6 +39,7 @@ func compileConstant(e EConstant) constant.Constant {
 	case *EI32:
 		return constant.NewInt(types.I32, e.V)
 	case *EBool:
+		// we have no boolean in LLVM IR
 		if e.V {
 			return constant.NewInt(types.I1, 1)
 		} else {
@@ -165,68 +166,33 @@ if condition {
 }
 ```
 
-We don't have to convert any **else-if** pattern. Therefore, our source AST looks like this:
+We don't have to convert any **else-if** pattern. Therefore, our `If` looks like this:
 
 ```go
-type Expr interface{ isExpr() Expr }
-type EVoid struct{ Expr }
-type EBool struct {
-	Expr
-	V bool
-}
-
-type Stmt interface{ isStmt() Stmt }
 type SIf struct {
 	Stmt
 	Cond Expr
 	Then Stmt
 	Else Stmt
 }
-type SRet struct {
-	Stmt
-	Val Expr
-}
 ```
 
-First, we limit expression to `EBool` and `EVoid`, and statement to `SIf` and `SRet`, to get a simple subset to focus on our purpose. Then we can get transformers to generate control flow **if**.
-
-1. generate value for constant, `0` for `false`, non `0` for `true`, `void` is `nil` in llir/llvm.
+Then we can get transformers to generate control flow **if**. Using **conditional jump** to generate **if** statement:
 
 ```go
-func compileConstant(b *ir.Block, e Expr) constant.Constant {
-    switch e := e.(type) {
-    case *EBool:
-   	    if e.V {
-   		    return constant.NewInt(types.I1, 1)
-        } else {
-            return constant.NewInt(types.I1, 0)
-        }
-    case *EVoid:
-        return nil
-    }
-   	panic("unknown expression")
-}
-```
-
-2. use **conditional jump** to generate **if** statement
-
-```go
-func compileStmt(bb *ir.Block, stmt Stmt) {
-    f := bb.Parent
-    switch s := stmt.(type) {
-    case *SIf:
-    	thenB := f.NewBlock("")
-    	compileStmt(f, thenB, s.Then)
-    	elseB := f.NewBlock("")
-    	compileStmt(f, elseB, s.Else)
-    	bb.NewCondBr(compileConstant(bb, s.Cond), thenB, elseB)
-    	if thenB.Term == nil {
-    		leaveB := f.NewBlock("")
-    		thenB.NewBr(leaveB)
-    	}
-    case *SRet:
-    	bb.NewRet(compileConstant(bb, s.Val))
-    }
+func (ctx *Context) compileStmt(stmt Stmt) {
+	switch s := stmt.(type) {
+	case *SIf:
+		thenCtx := ctx.NewContext(f.NewBlock("if.then"))
+		thenCtx.compileStmt(s.Then)
+		elseB := f.NewBlock("if.else")
+		ctx.NewContext(elseB).compileStmt(s.Else)
+		ctx.NewCondBr(ctx.compileExpr(s.Cond), thenCtx.Block, elseB)
+		if !thenCtx.HasTerminator() {
+			leaveB := f.NewBlock("leave.if")
+			thenCtx.NewBr(leaveB)
+		}
+	}
 }
 ```
 
@@ -236,14 +202,26 @@ When generating **if**, the most important thing is **leave block**, when if-the
 f := ir.NewFunc("foo", types.Void)
 bb := f.NewBlock("")
 
-compileStmt(f, bb, &SIf{
+ctx.compileStmt(&SIf{
     Cond: &EBool{V: true},
-    Then: nil,
+    Then: &SRet{Val: &EVoid{}},
     Else: &SRet{Val: &EVoid{}},
 })
+```
 
-// whatever what we did in compileStmt, we use convention that a block leave in the end is empty.
-f.Blocks[len(f.Blocks)-1].NewRet(nil)
+Finally, we get:
+
+```llvm
+define void @foo() {
+0:
+	br i1 true, label %if.then, label %if.else
+
+if.then:
+	ret void
+
+if.else:
+	ret void
+}
 ```
 
 We didn't support else-if directly at here, then we need to know how to handle this via parsing. First, we handle a sequence of `if` `(` `<expr>` `)` `<block>`. Ok, we can fill AST with `Cond` and `Then`, now we should get a token `else`, then we expect a `<block>` or `if`. When we get a `<block>` this is a obviously can be use as `Else`, else a `if` we keep parsing and use it as `Else` statement since `if` for sure is a statement. Of course, with this method, generated IR would have some useless label and jump, but flow analyzing should optimize them later, so it's fine.

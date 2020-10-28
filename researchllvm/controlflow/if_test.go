@@ -18,9 +18,6 @@ func TestParameterAttr(t *testing.T) {
 		Else: &SRet{Val: &EVoid{}},
 	})
 
-	// whatever what we did in compileStmt, we use convention that a block leave in the end is empty.
-	f.Blocks[len(f.Blocks)-1].NewRet(nil)
-
 	fmt.Println(f.LLString())
 }
 

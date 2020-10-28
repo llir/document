@@ -153,10 +153,10 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 	case *SIf:
 		thenCtx := ctx.NewContext(f.NewBlock("if.then"))
 		thenCtx.compileStmt(s.Then)
-		elseB := f.NewBlock("if.else")
-		ctx.NewContext(elseB).compileStmt(s.Else)
-		ctx.NewCondBr(ctx.compileExpr(s.Cond), thenCtx.Block, elseB)
-		if thenCtx.HasTerminator() {
+		elseCtx := ctx.NewContext(f.NewBlock("if.else"))
+		elseCtx.compileStmt(s.Else)
+		ctx.NewCondBr(ctx.compileExpr(s.Cond), thenCtx.Block, elseCtx.Block)
+		if !thenCtx.HasTerminator() {
 			leaveB := f.NewBlock("leave.if")
 			thenCtx.NewBr(leaveB)
 		}
