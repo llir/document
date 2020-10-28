@@ -113,15 +113,17 @@ type SRet struct {
 
 type Context struct {
 	*extend.ExtBlock
-	parent *Context
-	vars   map[string]value.Value
+	parent     *Context
+	vars       map[string]value.Value
+	leaveBlock *ir.Block
 }
 
 func NewContext(b *ir.Block) *Context {
 	return &Context{
-		ExtBlock: extend.Block(b),
-		parent:   nil,
-		vars:     make(map[string]value.Value),
+		ExtBlock:   extend.Block(b),
+		parent:     nil,
+		vars:       make(map[string]value.Value),
+		leaveBlock: nil,
 	}
 }
 
@@ -171,8 +173,9 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 	case *SDoWhile:
 		doCtx := ctx.NewContext(f.NewBlock("do.while.body"))
 		ctx.NewBr(doCtx.Block)
-		doCtx.compileStmt(s.Block)
 		leaveB := f.NewBlock("leave.do.while")
+		doCtx.leaveBlock = leaveB
+		doCtx.compileStmt(s.Block)
 		doCtx.NewCondBr(doCtx.compileExpr(s.Cond), doCtx.Block, leaveB)
 	case *SForLoop:
 		loopCtx := ctx.NewContext(f.NewBlock("for.loop.body"))
@@ -182,8 +185,9 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 		step := loopCtx.compileExpr(s.Step)
 		firstAppear.Incs = append(firstAppear.Incs, ir.NewIncoming(step, loopCtx.Block))
 		loopCtx.vars[s.InitName] = step
-		loopCtx.compileStmt(s.Block)
 		leaveB := f.NewBlock("leave.for.loop")
+		loopCtx.leaveBlock = leaveB
+		loopCtx.compileStmt(s.Block)
 		loopCtx.NewCondBr(loopCtx.compileExpr(s.Cond), loopCtx.Block, leaveB)
 	case *SDefine:
 		v := ctx.NewAlloca(s.Typ)
@@ -191,5 +195,7 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 		ctx.vars[s.Name] = v
 	case *SRet:
 		ctx.NewRet(ctx.compileExpr(s.Val))
+	case *SBreak:
+		ctx.NewBr(ctx.leaveBlock)
 	}
 }

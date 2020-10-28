@@ -1,5 +1,113 @@
 # Control Flow
 
+Before we start, we need to prepare compile function for something like **expression** and **statement** that not our target.
+
+```go
+type Expr interface{ isExpr() Expr }
+type EConstant interface {
+	Expr
+	isEConstant() EConstant
+}
+type EVoid struct{ EConstant }
+type EBool struct {
+	EConstant
+	V bool
+}
+type EI32 struct {
+	EConstant
+	V int64
+}
+type EVariable struct {
+	Expr
+	Name string
+}
+type EAdd struct {
+	Expr
+	Lhs, Rhs Expr
+}
+type ELessThan struct {
+	Expr
+	Lhs, Rhs Expr
+}
+```
+
+And compile functions:
+
+```go
+func compileConstant(e EConstant) constant.Constant {
+	switch e := e.(type) {
+	case *EI32:
+		return constant.NewInt(types.I32, e.V)
+	case *EBool:
+		if e.V {
+			return constant.NewInt(types.I1, 1)
+		} else {
+			return constant.NewInt(types.I1, 0)
+		}
+	case *EVoid:
+		return nil
+	}
+	panic("unknown expression")
+}
+
+func (ctx *Context) compileExpr(e Expr) value.Value {
+	switch e := e.(type) {
+	case *EVariable:
+		return ctx.lookupVariable(e.Name)
+	case *EAdd:
+		l, r := ctx.compileExpr(e.Lhs), ctx.compileExpr(e.Rhs)
+		return ctx.NewAdd(l, r)
+	case *ELessThan:
+		l, r := ctx.compileExpr(e.Lhs), ctx.compileExpr(e.Rhs)
+		return ctx.NewICmp(enum.IPredSLT, l, r)
+	case EConstant:
+		return compileConstant(e)
+	}
+	panic("unimplemented expression")
+}
+```
+
+`EVariable` would need context to remember variable's value. Here is the related definition of `Context`:
+
+```go
+type Context struct {
+	*extend.ExtBlock
+	parent *Context
+	vars   map[string]value.Value
+}
+
+func NewContext(b *ir.Block) *Context {
+	return &Context{
+		ExtBlock: extend.Block(b),
+		parent:   nil,
+		vars:     make(map[string]value.Value),
+	}
+}
+
+func (c *Context) NewContext(b *ir.Block) *Context {
+	ctx := NewContext(b)
+	ctx.parent = c
+	return ctx
+}
+
+func (c Context) lookupVariable(name string) value.Value {
+	if v, ok := c.vars[name]; ok {
+		return v
+	} else if c.parent != nil {
+		return c.parent.lookupVariable(name)
+	} else {
+		fmt.Printf("variable: `%s`\n", name)
+		panic("no such variable")
+	}
+}
+```
+
+Finally, we would have some simple statement as placeholder:
+
+```go
+
+```
+
 ### If
 
 Since we can let:
