@@ -12,13 +12,17 @@ import (
 )
 
 type Expr interface{ isExpr() Expr }
-type EVoid struct{ Expr }
-type EBool struct {
+type EConstant interface {
 	Expr
+	isEConstant() EConstant
+}
+type EVoid struct{ EConstant }
+type EBool struct {
+	EConstant
 	V bool
 }
 type EI32 struct {
-	Expr
+	EConstant
 	V int64
 }
 type EVariable struct {
@@ -34,7 +38,7 @@ type ELessThan struct {
 	Lhs, Rhs Expr
 }
 
-func compileConstant(e Expr) constant.Constant {
+func compileConstant(e EConstant) constant.Constant {
 	switch e := e.(type) {
 	case *EI32:
 		return constant.NewInt(types.I32, e.V)
@@ -60,9 +64,10 @@ func (ctx *Context) compileExpr(e Expr) value.Value {
 	case *ELessThan:
 		l, r := ctx.compileExpr(e.Lhs), ctx.compileExpr(e.Rhs)
 		return ctx.NewICmp(enum.IPredSLT, l, r)
-	default:
+	case EConstant:
 		return compileConstant(e)
 	}
+	panic("unimplemented expression")
 }
 
 type Stmt interface{ isStmt() Stmt }
@@ -77,7 +82,7 @@ type SSwitch struct {
 	Stmt
 	Target   Expr
 	CaseList []struct {
-		Expr
+		EConstant
 		Stmt
 	}
 	DefaultCase Stmt
@@ -158,7 +163,7 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 		for _, ca := range s.CaseList {
 			caseB := f.NewBlock("switch.case")
 			ctx.NewContext(caseB).compileStmt(ca.Stmt)
-			cases = append(cases, ir.NewCase(compileConstant(ca.Expr), caseB))
+			cases = append(cases, ir.NewCase(compileConstant(ca.EConstant), caseB))
 		}
 		defaultB := f.NewBlock("switch.default")
 		ctx.NewContext(defaultB).compileStmt(s.DefaultCase)

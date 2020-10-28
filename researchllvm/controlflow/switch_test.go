@@ -15,10 +15,10 @@ func TestSwitch(t *testing.T) {
 	ctx.compileStmt(&SSwitch{
 		Target: &EBool{V: true},
 		CaseList: []struct {
-			Expr
+			EConstant
 			Stmt
 		}{
-			{Expr: &EBool{V: true}, Stmt: &SRet{Val: &EVoid{}}},
+			{EConstant: &EBool{V: true}, Stmt: &SRet{Val: &EVoid{}}},
 		},
 		DefaultCase: &SRet{Val: &EVoid{}},
 	})
