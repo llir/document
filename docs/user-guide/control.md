@@ -307,18 +307,16 @@ type SDoWhile struct {
 	Block Stmt
 }
 
-func compileStmt(block *ir.Block, stmt Stmt) {
-    switch s := stmt.(type) {
-    case *SDoWhile:
-        doB := b.Block
-        // if previous block is not empty, then we need to create new block for do-while loop
-        if b.Insts != nil {
-            doB = f.NewBlock("")
-        }
-        compileStmt(doB, s.Block)
-        leaveB := f.NewBlock("")
-        doB.NewCondBr(compileConstant(s.Cond), doB, leaveB)
-    }
+func (ctx *Context) compileStmt(stmt Stmt) {
+	switch s := stmt.(type) {
+	case *SDoWhile:
+		doCtx := ctx.NewContext(f.NewBlock("do.while.body"))
+		ctx.NewBr(doCtx.Block)
+		leaveB := f.NewBlock("leave.do.while")
+		doCtx.leaveBlock = leaveB
+		doCtx.compileStmt(s.Block)
+		doCtx.NewCondBr(doCtx.compileExpr(s.Cond), doCtx.Block, leaveB)
+	}
 }
 ```
 
@@ -326,37 +324,34 @@ Can see that, first we check last block is empty or not, if it's empty we keep u
 
 ```go
 f := ir.NewFunc("foo", types.Void)
-b := f.NewBlock("")
+ctx := NewContext(f.NewBlock(""))
 
-compileStmt(b, &SDoWhile{
-    Cond: &EBool{V: true},
-    Block: &SDefine{
-        Stmt: nil,
-        Name: "foo",
-        Typ:  types.I32,
-        Expr: &EI32{V: 1},
-    },
+ctx.compileStmt(&SDoWhile{
+	Cond: &EBool{V: true},
+	Block: &SDefine{
+		Stmt: nil,
+		Name: "foo",
+		Typ:  types.I32,
+		Expr: &EI32{V: 1},
+	},
 })
 
 f.Blocks[len(f.Blocks)-1].NewRet(nil)
 ```
 
-`SDefine` is define for helping since terminator like `ret` would be remove when we put another terminator `condbr`, and return in a loop as an example is weird. Here is code generation for `SDefine`:
+And output:
 
-```go
-type SDefine struct {
-	Stmt
-	Name string
-	Typ  types.Type
-	Expr Expr
-}
+```llvm
+define void @foo() {
+0:
+	br label %do.while.body
 
-func compileStmt(block *ir.Block, stmt Stmt) {
-    switch s := stmt.(type) {
-    case *SDefine:
-        v := b.NewAlloca(s.Typ)
-        v.SetName(s.Name)
-        b.NewStore(compileConstant(s.Expr), v)
-    }
+do.while.body:
+	%1 = alloca i32
+	store i32 1, i32* %1
+	br i1 true, label %do.while.body, label %leave.do.while
+
+leave.do.while:
+	ret void
 }
 ```
