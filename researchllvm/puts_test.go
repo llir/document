@@ -6,8 +6,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
-
-	"github.com/dannypsnl/researchllvm/helper"
+	"github.com/llir/researchllvm/helper"
 )
 
 func TestPuts(t *testing.T) {

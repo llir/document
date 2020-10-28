@@ -1,4 +1,4 @@
-module github.com/dannypsnl/researchllvm
+module github.com/llir/researchllvm
 
 go 1.13
 
