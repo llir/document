@@ -89,20 +89,16 @@ type SDoWhile struct {
 }
 type SForLoop struct {
 	Stmt
-	Init  *SDefine
-	Step  Stmt
-	Cond  Expr
-	Block Stmt
+	InitName string
+	InitExpr Expr
+	Step     Expr
+	Cond     Expr
+	Block    Stmt
 }
 type SDefine struct {
 	Stmt
 	Name string
 	Typ  types.Type
-	Expr Expr
-}
-type SAssign struct {
-	Stmt
-	Name string
 	Expr Expr
 }
 type SRet struct {
@@ -168,27 +164,25 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 		ctx.NewContext(defaultB).compileStmt(s.DefaultCase)
 		ctx.NewSwitch(ctx.compileExpr(s.Target), defaultB, cases...)
 	case *SDoWhile:
-		doCtx := ctx.NewContext(f.NewBlock("do.body"))
+		doCtx := ctx.NewContext(f.NewBlock("do.while.body"))
 		ctx.NewBr(doCtx.Block)
 		doCtx.compileStmt(s.Block)
 		leaveB := f.NewBlock("leave.do.while")
 		doCtx.NewCondBr(doCtx.compileExpr(s.Cond), doCtx.Block, leaveB)
 	case *SForLoop:
-		ctx.compileStmt(s.Init)
 		loopCtx := ctx.NewContext(f.NewBlock("for.loop.body"))
-		leaveB := f.NewBlock("leave.for.loop")
-		ctx.NewCondBr(ctx.compileExpr(s.Cond), loopCtx.Block, leaveB)
+		ctx.NewBr(loopCtx.Block)
+		firstAppear := loopCtx.NewPhi(ir.NewIncoming(loopCtx.compileExpr(s.InitExpr), ctx.Block))
+		loopCtx.vars[s.InitName] = firstAppear
+		step := loopCtx.compileExpr(s.Step)
+		firstAppear.Incs = append(firstAppear.Incs, ir.NewIncoming(step, loopCtx.Block))
+		loopCtx.vars[s.InitName] = step
 		loopCtx.compileStmt(s.Block)
-		loopCtx.compileStmt(s.Step)
+		leaveB := f.NewBlock("leave.for.loop")
 		loopCtx.NewCondBr(loopCtx.compileExpr(s.Cond), loopCtx.Block, leaveB)
 	case *SDefine:
 		v := ctx.NewAlloca(s.Typ)
 		ctx.NewStore(ctx.compileExpr(s.Expr), v)
-		ctx.vars[s.Name] = v
-	case *SAssign:
-		exp := ctx.compileExpr(s.Expr)
-		v := ctx.NewAlloca(exp.Type())
-		ctx.NewStore(exp, v)
 		ctx.vars[s.Name] = v
 	case *SRet:
 		ctx.NewRet(ctx.compileExpr(s.Val))
