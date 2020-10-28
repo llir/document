@@ -355,3 +355,76 @@ leave.do.while:
 	ret void
 }
 ```
+
+#### For Loop
+
+For-loop would be an interesting case, at here, I only present a for-loop that can only have one initialize variable to reduce complexity, therefore, we have a AST like this:
+
+```go
+type SForLoop struct {
+	Stmt
+	InitName string
+	InitExpr Expr
+	Step     Expr
+	Cond     Expr
+	Block    Stmt
+}
+```
+
+For example, `for (x=0; x=x+1; x<10) {}` break down to:
+
+ 1.`InitName`: `x`
+ 2. `InitExpr`: `0`
+ 3. `Step`: `x+1`
+ 4. `Cond`: `x<10`
+ 5. `Block`: `{}`
+ 
+At first view, people might think for-loop is as easy as do-while, but in SSA form, reuse variable in a loop need a new instruction: [phi](https://llvm.org/docs/LangRef.html#i-phi).
+
+```go
+func (ctx *Context) compileStmt(stmt Stmt) {
+	switch s := stmt.(type) {
+	case *SForLoop:
+		loopCtx := ctx.NewContext(f.NewBlock("for.loop.body"))
+		ctx.NewBr(loopCtx.Block)
+		firstAppear := loopCtx.NewPhi(ir.NewIncoming(loopCtx.compileExpr(s.InitExpr), ctx.Block))
+		loopCtx.vars[s.InitName] = firstAppear
+		step := loopCtx.compileExpr(s.Step)
+		firstAppear.Incs = append(firstAppear.Incs, ir.NewIncoming(step, loopCtx.Block))
+		loopCtx.vars[s.InitName] = step
+		leaveB := f.NewBlock("leave.for.loop")
+		loopCtx.leaveBlock = leaveB
+		loopCtx.compileStmt(s.Block)
+		loopCtx.NewCondBr(loopCtx.compileExpr(s.Cond), loopCtx.Block, leaveB)
+	}
+}
+```
+
+1. Create a loop body context
+2. jump from the previous block
+3. Put phi into loop body
+4. Phi would have two incoming, first is `InitExpr`, the second one is `Step` result.
+5. compile step
+6. compile the conditional branch, jump to loop body or leave block
+
+It generates:
+
+```llvm
+define void @foo() {
+0:
+	br label %for.loop.body
+
+for.loop.body:
+	%1 = phi i32 [ 0, %0 ], [ %2, %for.loop.body ]
+	%2 = add i32 %1, 1
+	%3 = alloca i32
+	store i32 2, i32* %3
+	%4 = icmp slt i32 %2, 10
+	br i1 %4, label %for.loop.body, label %leave.for.loop
+
+leave.for.loop:
+	ret void
+}
+```
+
+In fact, you can also avoid phi, you can make a try as practice.
