@@ -103,7 +103,7 @@ m.NewFunc(
 Output:
 
 ```llvm
-declare i32 @add(i32, i32)
+declare i32 @add(i32 %0, i32 %1)
 ```
 
 When we want to bind to existing functions defined in other object files, we would create function declarations.
