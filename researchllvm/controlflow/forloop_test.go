@@ -8,11 +8,17 @@ import (
 	"github.com/llir/llvm/ir/types"
 )
 
-func TestDoWhile(t *testing.T) {
+func TestForLoop(t *testing.T) {
 	f := ir.NewFunc("foo", types.Void)
 	ctx := NewContext(f.NewBlock(""))
 
-	ctx.compileStmt(&SDoWhile{
+	ctx.compileStmt(&SForLoop{
+		Init: &SDefine{Name: "x", Typ: types.I32, Expr: &EI32{V: 0}},
+		Step: &SAssign{
+			Stmt: nil,
+			Name: "x",
+			Expr: &EAdd{Lhs: &EVariable{Name: "x"}, Rhs: &EI32{V: 1}},
+		},
 		Cond: &EBool{V: true},
 		Block: &SDefine{
 			Stmt: nil,

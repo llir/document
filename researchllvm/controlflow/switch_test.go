@@ -10,9 +10,9 @@ import (
 
 func TestSwitch(t *testing.T) {
 	f := ir.NewFunc("foo", types.Void)
-	b := f.NewBlock("")
+	ctx := NewContext(f.NewBlock(""))
 
-	compileStmt(b, &SSwitch{
+	ctx.compileStmt(&SSwitch{
 		Target: &EBool{V: true},
 		CaseList: []struct {
 			Expr

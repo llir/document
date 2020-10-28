@@ -10,11 +10,11 @@ import (
 
 func TestParameterAttr(t *testing.T) {
 	f := ir.NewFunc("foo", types.Void)
-	bb := f.NewBlock("")
+	ctx := NewContext(f.NewBlock(""))
 
-	compileStmt(bb, &SIf{
+	ctx.compileStmt(&SIf{
 		Cond: &EBool{V: true},
-		Then: nil,
+		Then: &SRet{Val: &EVoid{}},
 		Else: &SRet{Val: &EVoid{}},
 	})
 

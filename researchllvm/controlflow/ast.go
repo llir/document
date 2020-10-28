@@ -5,6 +5,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 type Expr interface{ isExpr() Expr }
@@ -16,6 +17,42 @@ type EBool struct {
 type EI32 struct {
 	Expr
 	V int64
+}
+type EVariable struct {
+	Expr
+	Name string
+}
+type EAdd struct {
+	Expr
+	Lhs, Rhs Expr
+}
+
+func compileConstant(e Expr) constant.Constant {
+	switch e := e.(type) {
+	case *EI32:
+		return constant.NewInt(types.I32, e.V)
+	case *EBool:
+		if e.V {
+			return constant.NewInt(types.I1, 1)
+		} else {
+			return constant.NewInt(types.I1, 0)
+		}
+	case *EVoid:
+		return nil
+	}
+	panic("unknown expression")
+}
+
+func (ctx *Context) compileExpr(e Expr) value.Value {
+	switch e := e.(type) {
+	case *EVariable:
+		return ctx.vars[e.Name]
+	case *EAdd:
+		l, r := ctx.compileExpr(e.Lhs), ctx.compileExpr(e.Rhs)
+		return ctx.NewAdd(l, r)
+	default:
+		return compileConstant(e)
+	}
 }
 
 type Stmt interface{ isStmt() Stmt }
@@ -40,10 +77,22 @@ type SDoWhile struct {
 	Cond  Expr
 	Block Stmt
 }
+type SForLoop struct {
+	Stmt
+	Init  *SDefine
+	Step  Stmt
+	Cond  Expr
+	Block Stmt
+}
 type SDefine struct {
 	Stmt
 	Name string
 	Typ  types.Type
+	Expr Expr
+}
+type SAssign struct {
+	Stmt
+	Name string
 	Expr Expr
 }
 type SRet struct {
@@ -51,36 +100,48 @@ type SRet struct {
 	Val Expr
 }
 
-func compileConstant(e Expr) constant.Constant {
-	switch e := e.(type) {
-	case *EI32:
-		return constant.NewInt(types.I32, e.V)
-
-	case *EBool:
-		if e.V {
-			return constant.NewInt(types.I1, 1)
-		} else {
-			return constant.NewInt(types.I1, 0)
-		}
-	case *EVoid:
-		return nil
-	}
-	panic("unknown expression")
+type Context struct {
+	*extend.ExtBlock
+	parent *Context
+	vars   map[string]value.Value
 }
 
-func compileStmt(block *ir.Block, stmt Stmt) {
-	b := extend.Block(block)
-	if !b.BelongsToFunc() {
+func NewContext(b *ir.Block) *Context {
+	return &Context{
+		ExtBlock: extend.Block(b),
+		parent:   nil,
+		vars:     make(map[string]value.Value),
+	}
+}
+
+func (c *Context) NewContext(b *ir.Block) *Context {
+	ctx := NewContext(b)
+	ctx.parent = c
+	return ctx
+}
+
+func (c Context) Lookup(name string) value.Value {
+	if v, ok := c.vars[name]; ok {
+		return v
+	} else if c.parent != nil {
+		return c.parent.Lookup(name)
+	} else {
+		panic("no such variable")
+	}
+}
+
+func (ctx *Context) compileStmt(stmt Stmt) {
+	if !ctx.BelongsToFunc() {
 		return
 	}
-	f := b.Parent
+	f := ctx.Parent
 	switch s := stmt.(type) {
 	case *SIf:
 		thenB := extend.Block(f.NewBlock(""))
-		compileStmt(thenB.Block, s.Then)
+		ctx.NewContext(thenB.Block).compileStmt(s.Then)
 		elseB := f.NewBlock("")
-		compileStmt(elseB, s.Else)
-		b.NewCondBr(compileConstant(s.Cond), thenB.Block, elseB)
+		ctx.NewContext(elseB).compileStmt(s.Else)
+		ctx.NewCondBr(ctx.compileExpr(s.Cond), thenB.Block, elseB)
 		if thenB.HasTerminator() {
 			leaveB := f.NewBlock("")
 			thenB.NewBr(leaveB)
@@ -89,26 +150,42 @@ func compileStmt(block *ir.Block, stmt Stmt) {
 		cases := []*ir.Case{}
 		for _, ca := range s.CaseList {
 			caseB := f.NewBlock("")
-			compileStmt(caseB, ca.Stmt)
+			ctx.NewContext(caseB).compileStmt(ca.Stmt)
 			cases = append(cases, ir.NewCase(compileConstant(ca.Expr), caseB))
 		}
 		defaultB := f.NewBlock("")
-		compileStmt(defaultB, s.DefaultCase)
-		b.NewSwitch(compileConstant(s.Target), defaultB, cases...)
+		ctx.NewContext(defaultB).compileStmt(s.DefaultCase)
+		ctx.NewSwitch(ctx.compileExpr(s.Target), defaultB, cases...)
 	case *SDoWhile:
-		doB := b.Block
+		doB := ctx.ExtBlock.Block
 		// if previous block is not empty, then we need to create new block for do-while loop
-		if b.Insts != nil {
+		if ctx.Insts != nil {
 			doB = f.NewBlock("")
 		}
-		compileStmt(doB, s.Block)
+		doCtx := ctx.NewContext(doB)
+		doCtx.compileStmt(s.Block)
 		leaveB := f.NewBlock("")
-		doB.NewCondBr(compileConstant(s.Cond), doB, leaveB)
+		doB.NewCondBr(doCtx.compileExpr(s.Cond), doB, leaveB)
+	case *SForLoop:
+		ctx.NewContext(ctx.ExtBlock.Block).compileStmt(s.Init)
+		loopB := f.NewBlock("")
+		loopCtx := ctx.NewContext(loopB)
+		loopCtx.compileStmt(s.Block)
+		loopCtx.compileStmt(s.Step)
+		leaveB := f.NewBlock("")
+		loopB.NewCondBr(loopCtx.compileExpr(s.Cond), loopB, leaveB)
 	case *SDefine:
-		v := b.NewAlloca(s.Typ)
+		v := ctx.NewAlloca(s.Typ)
 		v.SetName(s.Name)
-		b.NewStore(compileConstant(s.Expr), v)
+		ctx.NewStore(ctx.compileExpr(s.Expr), v)
+		ctx.vars[s.Name] = v
+	case *SAssign:
+		exp := ctx.compileExpr(s.Expr)
+		v := ctx.NewAlloca(exp.Type())
+		v.SetName(s.Name)
+		ctx.NewStore(exp, v)
+		ctx.vars[s.Name] = v
 	case *SRet:
-		b.NewRet(compileConstant(s.Val))
+		ctx.NewRet(ctx.compileExpr(s.Val))
 	}
 }
