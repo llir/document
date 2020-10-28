@@ -1,9 +1,12 @@
 package controlflow
 
 import (
+	"fmt"
+
 	"github.com/dannypsnl/extend"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 )
@@ -23,6 +26,10 @@ type EVariable struct {
 	Name string
 }
 type EAdd struct {
+	Expr
+	Lhs, Rhs Expr
+}
+type ELessThan struct {
 	Expr
 	Lhs, Rhs Expr
 }
@@ -46,10 +53,13 @@ func compileConstant(e Expr) constant.Constant {
 func (ctx *Context) compileExpr(e Expr) value.Value {
 	switch e := e.(type) {
 	case *EVariable:
-		return ctx.vars[e.Name]
+		return ctx.lookupVariable(e.Name)
 	case *EAdd:
 		l, r := ctx.compileExpr(e.Lhs), ctx.compileExpr(e.Rhs)
 		return ctx.NewAdd(l, r)
+	case *ELessThan:
+		l, r := ctx.compileExpr(e.Lhs), ctx.compileExpr(e.Rhs)
+		return ctx.NewICmp(enum.IPredSLT, l, r)
 	default:
 		return compileConstant(e)
 	}
@@ -120,12 +130,13 @@ func (c *Context) NewContext(b *ir.Block) *Context {
 	return ctx
 }
 
-func (c Context) Lookup(name string) value.Value {
+func (c Context) lookupVariable(name string) value.Value {
 	if v, ok := c.vars[name]; ok {
 		return v
 	} else if c.parent != nil {
-		return c.parent.Lookup(name)
+		return c.parent.lookupVariable(name)
 	} else {
+		fmt.Printf("variable: `%s`\n", name)
 		panic("no such variable")
 	}
 }
@@ -157,7 +168,7 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 		ctx.NewContext(defaultB).compileStmt(s.DefaultCase)
 		ctx.NewSwitch(ctx.compileExpr(s.Target), defaultB, cases...)
 	case *SDoWhile:
-		doB := ctx.ExtBlock.Block
+		doB := ctx.Block
 		// if previous block is not empty, then we need to create new block for do-while loop
 		if ctx.Insts != nil {
 			doB = f.NewBlock("")
@@ -167,13 +178,13 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 		leaveB := f.NewBlock("")
 		doB.NewCondBr(doCtx.compileExpr(s.Cond), doB, leaveB)
 	case *SForLoop:
-		ctx.NewContext(ctx.ExtBlock.Block).compileStmt(s.Init)
-		loopB := f.NewBlock("")
-		loopCtx := ctx.NewContext(loopB)
+		ctx.compileStmt(s.Init)
+		loopCtx := ctx.NewContext(f.NewBlock(""))
+		leaveB := f.NewBlock("")
+		ctx.NewCondBr(ctx.compileExpr(s.Cond), loopCtx.Block, leaveB)
 		loopCtx.compileStmt(s.Block)
 		loopCtx.compileStmt(s.Step)
-		leaveB := f.NewBlock("")
-		loopB.NewCondBr(loopCtx.compileExpr(s.Cond), loopB, leaveB)
+		loopCtx.NewCondBr(loopCtx.compileExpr(s.Cond), loopCtx.Block, leaveB)
 	case *SDefine:
 		v := ctx.NewAlloca(s.Typ)
 		v.SetName(s.Name)
