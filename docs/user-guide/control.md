@@ -232,28 +232,28 @@ LLVM has [switch instruction](https://llvm.org/docs/LangRef.html#switch-instruct
 
 ```go
 type SSwitch struct {
-    Stmt
-    Target   Expr
-    CaseList []struct {
-        Expr
-        Stmt
-    }
-    DefaultCase Stmt
+	Stmt
+	Target   Expr
+	CaseList []struct {
+		EConstant // LLVM IR only takes constant, if you want advanced switch semantic, then you can't directly use this approach
+		Stmt
+	}
+	DefaultCase Stmt
 }
 
-func compileStmt(bb *ir.Block, stmt Stmt) {
-    switch s := stmt.(type) {
-    case *SSwitch:
-        cases := []*ir.Case{}
-        for _, ca := range s.CaseList {
-            caseB := f.NewBlock("")
-            compileStmt(caseB, ca.Stmt)
-            cases = append(cases, ir.NewCase(compileConstant(ca.Expr), caseB))
-        }
-        defaultB := f.NewBlock("")
-        compileStmt(defaultB, s.DefaultCase)
-        b.NewSwitch(compileConstant(s.Target), defaultB, cases...)
-    }
+func (ctx *Context) compileStmt(stmt Stmt) {
+	switch s := stmt.(type) {
+	case *SSwitch:
+		cases := []*ir.Case{}
+		for _, ca := range s.CaseList {
+			caseB := f.NewBlock("switch.case")
+			ctx.NewContext(caseB).compileStmt(ca.Stmt)
+			cases = append(cases, ir.NewCase(compileConstant(ca.EConstant), caseB))
+		}
+		defaultB := f.NewBlock("switch.default")
+		ctx.NewContext(defaultB).compileStmt(s.DefaultCase)
+		ctx.NewSwitch(ctx.compileExpr(s.Target), defaultB, cases...)
+	}
 }
 ```
 
@@ -261,18 +261,35 @@ For every case, we generate a block, then we can jump to target. Then we put sta
 
 ```go
 f := ir.NewFunc("foo", types.Void)
-b := f.NewBlock("")
+ctx := NewContext(f.NewBlock(""))
 
-compileStmt(b, &SSwitch{
-    Target: &EBool{V: true},
-    CaseList: []struct {
-        Expr
-        Stmt
-    }{
-        {Expr: &EBool{V: true}, Stmt: &SRet{Val: &EVoid{}}},
-    },
-    DefaultCase: &SRet{Val: &EVoid{}},
+ctx.compileStmt(&SSwitch{
+	Target: &EBool{V: true},
+	CaseList: []struct {
+		EConstant
+		Stmt
+	}{
+		{EConstant: &EBool{V: true}, Stmt: &SRet{Val: &EVoid{}}},
+	},
+	DefaultCase: &SRet{Val: &EVoid{}},
 })
+```
+
+And output:
+
+```llvm
+define void @foo() {
+0:
+	switch i1 true, label %switch.default [
+		i1 true, label %switch.case
+	]
+
+switch.case:
+	ret void
+
+switch.default:
+	ret void
+}
 ```
 
 The switch statement in this section is quite naive, for advanced semantic like pattern matching with extraction or where clause, you would need to do more.
