@@ -148,52 +148,46 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 	f := ctx.Parent
 	switch s := stmt.(type) {
 	case *SIf:
-		thenB := extend.Block(f.NewBlock(""))
-		ctx.NewContext(thenB.Block).compileStmt(s.Then)
-		elseB := f.NewBlock("")
+		thenCtx := ctx.NewContext(f.NewBlock("if.then"))
+		thenCtx.compileStmt(s.Then)
+		elseB := f.NewBlock("if.else")
 		ctx.NewContext(elseB).compileStmt(s.Else)
-		ctx.NewCondBr(ctx.compileExpr(s.Cond), thenB.Block, elseB)
-		if thenB.HasTerminator() {
-			leaveB := f.NewBlock("")
-			thenB.NewBr(leaveB)
+		ctx.NewCondBr(ctx.compileExpr(s.Cond), thenCtx.Block, elseB)
+		if thenCtx.HasTerminator() {
+			leaveB := f.NewBlock("leave.if")
+			thenCtx.NewBr(leaveB)
 		}
 	case *SSwitch:
 		cases := []*ir.Case{}
 		for _, ca := range s.CaseList {
-			caseB := f.NewBlock("")
+			caseB := f.NewBlock("switch.case")
 			ctx.NewContext(caseB).compileStmt(ca.Stmt)
 			cases = append(cases, ir.NewCase(compileConstant(ca.Expr), caseB))
 		}
-		defaultB := f.NewBlock("")
+		defaultB := f.NewBlock("switch.default")
 		ctx.NewContext(defaultB).compileStmt(s.DefaultCase)
 		ctx.NewSwitch(ctx.compileExpr(s.Target), defaultB, cases...)
 	case *SDoWhile:
-		doB := ctx.Block
-		// if previous block is not empty, then we need to create new block for do-while loop
-		if ctx.Insts != nil {
-			doB = f.NewBlock("")
-		}
-		doCtx := ctx.NewContext(doB)
+		doCtx := ctx.NewContext(f.NewBlock("do.body"))
+		ctx.NewBr(doCtx.Block)
 		doCtx.compileStmt(s.Block)
-		leaveB := f.NewBlock("")
-		doB.NewCondBr(doCtx.compileExpr(s.Cond), doB, leaveB)
+		leaveB := f.NewBlock("leave.do.while")
+		doCtx.NewCondBr(doCtx.compileExpr(s.Cond), doCtx.Block, leaveB)
 	case *SForLoop:
 		ctx.compileStmt(s.Init)
-		loopCtx := ctx.NewContext(f.NewBlock(""))
-		leaveB := f.NewBlock("")
+		loopCtx := ctx.NewContext(f.NewBlock("for.loop.body"))
+		leaveB := f.NewBlock("leave.for.loop")
 		ctx.NewCondBr(ctx.compileExpr(s.Cond), loopCtx.Block, leaveB)
 		loopCtx.compileStmt(s.Block)
 		loopCtx.compileStmt(s.Step)
 		loopCtx.NewCondBr(loopCtx.compileExpr(s.Cond), loopCtx.Block, leaveB)
 	case *SDefine:
 		v := ctx.NewAlloca(s.Typ)
-		v.SetName(s.Name)
 		ctx.NewStore(ctx.compileExpr(s.Expr), v)
 		ctx.vars[s.Name] = v
 	case *SAssign:
 		exp := ctx.compileExpr(s.Expr)
 		v := ctx.NewAlloca(exp.Type())
-		v.SetName(s.Name)
 		ctx.NewStore(exp, v)
 		ctx.vars[s.Name] = v
 	case *SRet:
