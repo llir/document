@@ -71,14 +71,14 @@ func (ctx *Context) compileExpr(e Expr) value.Value {
 
 ```go
 type Context struct {
-	*extend.ExtBlock
+	*ir.Block
 	parent *Context
 	vars   map[string]value.Value
 }
 
 func NewContext(b *ir.Block) *Context {
 	return &Context{
-		ExtBlock: extend.Block(b),
+		Block: b,
 		parent:   nil,
 		vars:     make(map[string]value.Value),
 	}
@@ -105,7 +105,36 @@ func (c Context) lookupVariable(name string) value.Value {
 Finally, we would have some simple statement as placeholder:
 
 ```go
+type Stmt interface{ isStmt() Stmt }
+type SDefine struct {
+	Stmt
+	Name string
+	Typ  types.Type
+	Expr Expr
+}
+type SRet struct {
+	Stmt
+	Val Expr
+}
+```
 
+Then compile:
+
+```go
+func (ctx *Context) compileStmt(stmt Stmt) {
+	if ctx.Parent != nil {
+		return
+	}
+	f := ctx.Parent
+	switch s := stmt.(type) {
+	case *SDefine:
+		v := ctx.NewAlloca(s.Typ)
+		ctx.NewStore(ctx.compileExpr(s.Expr), v)
+		ctx.vars[s.Name] = v
+	case *SRet:
+		ctx.NewRet(ctx.compileExpr(s.Val))
+	}
+}
 ```
 
 ### If
