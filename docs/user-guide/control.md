@@ -320,7 +320,7 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 }
 ```
 
-Can see that, first we check last block is empty or not, if it's empty we keep using it as do-while body. Then we have a leave block, in the end of the do-while body we jump out to leave block or body again depends on condition. Let's test it:
+Can see that, we jump to do-while body directly. Then we have a leave block, in the end of the do-while body we jump out to leave block or body again depends on condition. Let's test it:
 
 ```go
 f := ir.NewFunc("foo", types.Void)
