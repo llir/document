@@ -296,6 +296,37 @@ The switch statement in this section is quite naive, for advanced semantic like 
 
 ### Loop
 
+#### Break
+
+Break statement needs to extend `Context`, with a new field called `leaveBlock`:
+
+```go
+type Context struct {
+	// ...
+	leaveBlock *ir.Block
+}
+
+func NewContext(b *ir.Block) *Context {
+	return &Context{
+		// ...
+		leaveBlock: nil,
+	}
+}
+```
+
+Then it's just a jump:
+
+```go
+func (ctx *Context) compileStmt(stmt Stmt) {
+	switch s := stmt.(type) {
+	case *SBreak:
+		ctx.NewBr(ctx.leaveBlock)
+	}
+}
+```
+
+Remember to update leave block information(and remove it when needed), and continue can be done in the same way.
+
 #### Do While
 
 Do while is the simplest loop structure since it's code structure almost same to the IR structure. Here we go:
