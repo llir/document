@@ -404,11 +404,15 @@ type SForLoop struct {
 
 For example, `for (x=0; x=x+1; x<10) {}` break down to:
 
-1.`InitName`: `x`
-2. `InitExpr`: `0`
-3. `Step`: `x+1`
-4. `Cond`: `x<10`
-5. `Block`: `{}`
+```go
+SForLoop {
+	InitName: `x`
+	InitExpr: `0`
+	Step: `x + 1`
+	Cond: `x < 10`
+	Block: `{}`
+}
+```
 
 At first view, people might think for-loop is as easy as do-while, but in SSA form, reuse variable in a loop need a new instruction: [phi](https://llvm.org/docs/LangRef.html#i-phi).
 
