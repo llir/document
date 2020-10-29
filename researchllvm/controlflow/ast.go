@@ -100,6 +100,11 @@ type SForLoop struct {
 	Cond     Expr
 	Block    Stmt
 }
+type SWhile struct {
+	Stmt
+	Cond  Expr
+	Block Stmt
+}
 type SDefine struct {
 	Stmt
 	Name string
@@ -189,6 +194,16 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 		loopCtx.leaveBlock = leaveB
 		loopCtx.compileStmt(s.Block)
 		loopCtx.NewCondBr(loopCtx.compileExpr(s.Cond), loopCtx.Block, leaveB)
+	case *SWhile:
+		condCtx := ctx.NewContext(f.NewBlock("while.loop.cond"))
+		ctx.NewBr(condCtx.Block)
+		loopCtx := ctx.NewContext(f.NewBlock("while.loop.body"))
+		leaveB := f.NewBlock("leave.do.while")
+		condCtx.NewCondBr(condCtx.compileExpr(s.Cond), loopCtx.Block, leaveB)
+		condCtx.leaveBlock = leaveB
+		loopCtx.leaveBlock = leaveB
+		loopCtx.compileStmt(s.Block)
+		loopCtx.NewBr(condCtx.Block)
 	case *SDefine:
 		v := ctx.NewAlloca(s.Typ)
 		ctx.NewStore(ctx.compileExpr(s.Expr), v)
