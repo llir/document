@@ -442,7 +442,24 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 5. compile step
 6. compile the conditional branch, jump to loop body or leave block
 
-It generates:
+Testing:
+
+```go
+f := ir.NewFunc("foo", types.Void)
+ctx := NewContext(f.NewBlock(""))
+
+ctx.compileStmt(&SForLoop{
+	InitName: "x",
+	InitExpr: &EI32{V: 0},
+	Step:     &EAdd{Lhs: &EVariable{Name: "x"}, Rhs: &EI32{V: 1}},
+	Cond:     &ELessThan{Lhs: &EVariable{Name: "x"}, Rhs: &EI32{V: 10}},
+	Block:    &SDefine{Name: "foo", Typ: types.I32, Expr: &EI32{V: 2}},
+})
+
+f.Blocks[len(f.Blocks)-1].NewRet(nil)
+```
+
+The test generates:
 
 ```llvm
 define void @foo() {
@@ -463,3 +480,77 @@ leave.for.loop:
 ```
 
 In fact, you can also avoid phi, you can make a try as practice.
+
+#### While
+
+The last kind of loop we want to present is **while** loop.
+
+```go
+type SWhile struct {
+	Stmt
+	Cond  Expr
+	Block Stmt
+}
+```
+
+It looks just like **do while**, but have different semantic, it might not execute it's body. Here is the implementation.
+
+```go
+func (ctx *Context) compileStmt(stmt Stmt) {
+	switch s := stmt.(type) {
+	case *SWhile:
+		condCtx := ctx.NewContext(f.NewBlock("while.loop.cond"))
+		ctx.NewBr(condCtx.Block)
+		loopCtx := ctx.NewContext(f.NewBlock("while.loop.body"))
+		leaveB := f.NewBlock("leave.do.while")
+		condCtx.NewCondBr(condCtx.compileExpr(s.Cond), loopCtx.Block, leaveB)
+		condCtx.leaveBlock = leaveB
+		loopCtx.leaveBlock = leaveB
+		loopCtx.compileStmt(s.Block)
+		loopCtx.NewBr(condCtx.Block)
+	}
+}
+```
+
+We would need two blocks since `br` is a terminator, then the logic is simple:
+
+1. `while.loop.cond` would jump to `while.loop.body` or `leave.do.while` by condition
+2. `while.loop.body` always back to `while.loop.cond`.
+
+Finally, test:
+
+```go
+f := ir.NewFunc("foo", types.Void)
+ctx := NewContext(f.NewBlock(""))
+
+ctx.compileStmt(&SWhile{
+	Cond: &EBool{V: true},
+	Block: &SDefine{
+		Name: "x",
+		Typ:  types.I32,
+		Expr: &EI32{V: 0},
+	},
+})
+
+f.Blocks[len(f.Blocks)-1].NewRet(nil)
+```
+
+and output:
+
+```llvm
+define void @foo() {
+0:
+	br label %while.loop.cond
+
+while.loop.cond:
+	br i1 true, label %while.loop.body, label %leave.do.while
+
+while.loop.body:
+	%1 = alloca i32
+	store i32 0, i32* %1
+	br label %while.loop.cond
+
+leave.do.while:
+	ret void
+}
+```
