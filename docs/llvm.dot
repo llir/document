@@ -1,0 +1,7 @@
+digraph hierarchy {
+  nodesep=1.0 // increases the separation between nodes
+
+  node [color=Black,fontname=Courier,shape=box] //All nodes will this shape and colour
+
+ {"C Frontend" "Fortran Frontend" "Ada Frontend"}->Optimizer->{"X86 Backend" "PowerPC Backend" "ARM Backend"}
+}

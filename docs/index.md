@@ -6,13 +6,7 @@
 
 When creating a compiler, a classical design may look like this:
 
-{% dot attack_plan.svg
-digraph hierarchy {
-  node [color=Black,fontname=Courier,shape=box] //All nodes will this shape and colour
-
- "Source Code"->Frontend->Optimizer->Backend->"Machine Code"
-}
-%}
+![](./classic.dot.jpg)
 
 This worked quite well in the old days. There was only one input language, and one target machine.
 
@@ -20,15 +14,7 @@ Today there exist a lot of target machines to support! And a lot of input langua
 
 LLVM offers a solution to this problem by defining such a shared representation, namely LLVM IR. Here is the new design:
 
-{% dot attack_plan.svg
-digraph hierarchy {
-  nodesep=1.0 // increases the separation between nodes
-
-  node [color=Black,fontname=Courier,shape=box] //All nodes will this shape and colour
-
- {"C Frontend" "Fortran Frontend" "Ada Frontend"}->Optimizer->{"X86 Backend" "PowerPC Backend" "ARM Backend"}
-}
-%}
+![](./llvm.dot.jpg)
 
 To write a compiler for a new language, now we only have to focus on our frontend. Similarly, to add support for a new target machine, now we only have to add a new backend. And to improve the code generation of all input/output pairs, now we only have to focus on the middle end optimizer. Thank you, Chris Lattner and all those who have contributed to LLVM.
 
