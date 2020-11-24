@@ -1,5 +1,15 @@
+.PHONY: deps serve
+deps:
+	pip3 install mkdocs
+	pip3 install markdown_inline_graphviz_extension --user
+	nix-env -i graphviz
+serve:
+	@mkdocs serve
+
 .PHONY: build commit publish
-build:
+site:
+	@git clone --branch gh-pages git@github.com:llir/document.git site
+build: site
 	mkdocs build
 
 commit: build
