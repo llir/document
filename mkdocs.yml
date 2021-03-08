@@ -7,5 +7,3 @@ nav:
         - 'Control Flow': 'user-guide/control.md'
         - 'More Function': 'user-guide/funcs.md'
         - 'High Level Types': 'user-guide/types.md'
-markdown_extensions:
-    - markdown_inline_graphviz

@@ -1,7 +1,6 @@
 .PHONY: deps serve
 deps:
 	pip3 install mkdocs --user
-	pip3 install markdown_inline_graphviz_extension --user
 	nix-env -i graphviz
 serve:
 	@mkdocs serve
