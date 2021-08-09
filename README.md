@@ -7,8 +7,6 @@
 make deps
 # local test
 make serve
-# deployment
-make publish
 ```
 
 ### Update Graph(If need)
