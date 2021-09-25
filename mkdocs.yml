@@ -1,6 +1,7 @@
 site_name: llir/llvm
 theme:
     name: readthedocs
+    highlightjs: true
 nav:
     - Home: 'index.md'
     - 'User Guide':
