@@ -1,0 +1,5 @@
+digraph hierarchy {
+  node [color=Black,fontname=Courier,shape=box] //All nodes will this shape and colour
+
+ "Source Code"->Frontend->Optimizer->Backend->"Machine Code"
+}

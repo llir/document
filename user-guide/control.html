@@ -1,0 +1,981 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.9">
+    
+    
+      
+        <title>Control Flow - llir/llvm</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ca7ac06f.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.f1a3b89f.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+    
+      
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#control-flow" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="llir/llvm" class="md-header__button md-logo" aria-label="llir/llvm" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            llir/llvm
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Control Flow
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="llir/llvm" class="md-nav__button md-logo" aria-label="llir/llvm" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    llir/llvm
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      <label class="md-nav__link" for="__nav_2">
+        User Guide
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="User Guide" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          User Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="basic.html" class="md-nav__link">
+        Basic Introduction
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Control Flow
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="control.html" class="md-nav__link md-nav__link--active">
+        Control Flow
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#if" class="md-nav__link">
+    If
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switch" class="md-nav__link">
+    Switch
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loop" class="md-nav__link">
+    Loop
+  </a>
+  
+    <nav class="md-nav" aria-label="Loop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#break" class="md-nav__link">
+    Break
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#do-while" class="md-nav__link">
+    Do While
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-loop" class="md-nav__link">
+    For Loop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#while" class="md-nav__link">
+    While
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="funcs.html" class="md-nav__link">
+        More Function
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="types.html" class="md-nav__link">
+        High Level Types
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#if" class="md-nav__link">
+    If
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switch" class="md-nav__link">
+    Switch
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loop" class="md-nav__link">
+    Loop
+  </a>
+  
+    <nav class="md-nav" aria-label="Loop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#break" class="md-nav__link">
+    Break
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#do-while" class="md-nav__link">
+    Do While
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-loop" class="md-nav__link">
+    For Loop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#while" class="md-nav__link">
+    While
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                
+                <h1 id="control-flow">Control Flow</h1>
+<p>Before we start, we need to prepare compile function for something like <strong>expression</strong> and <strong>statement</strong> that not our target.</p>
+<pre><code class="language-go">type Expr interface{ isExpr() Expr }
+type EConstant interface {
+    Expr
+    isEConstant() EConstant
+}
+type EVoid struct{ EConstant }
+type EBool struct {
+    EConstant
+    V bool
+}
+type EI32 struct {
+    EConstant
+    V int64
+}
+type EVariable struct {
+    Expr
+    Name string
+}
+type EAdd struct {
+    Expr
+    Lhs, Rhs Expr
+}
+type ELessThan struct {
+    Expr
+    Lhs, Rhs Expr
+}
+</code></pre>
+<p>And compile functions:</p>
+<pre><code class="language-go">func compileConstant(e EConstant) constant.Constant {
+    switch e := e.(type) {
+    case *EI32:
+        return constant.NewInt(types.I32, e.V)
+    case *EBool:
+        // we have no boolean in LLVM IR
+        if e.V {
+            return constant.NewInt(types.I1, 1)
+        } else {
+            return constant.NewInt(types.I1, 0)
+        }
+    case *EVoid:
+        return nil
+    }
+    panic(&quot;unknown expression&quot;)
+}
+
+func (ctx *Context) compileExpr(e Expr) value.Value {
+    switch e := e.(type) {
+    case *EVariable:
+        return ctx.lookupVariable(e.Name)
+    case *EAdd:
+        l, r := ctx.compileExpr(e.Lhs), ctx.compileExpr(e.Rhs)
+        return ctx.NewAdd(l, r)
+    case *ELessThan:
+        l, r := ctx.compileExpr(e.Lhs), ctx.compileExpr(e.Rhs)
+        return ctx.NewICmp(enum.IPredSLT, l, r)
+    case EConstant:
+        return compileConstant(e)
+    }
+    panic(&quot;unimplemented expression&quot;)
+}
+</code></pre>
+<p><code>EVariable</code> would need context to remember variable's value. Here is the related definition of <code>Context</code>:</p>
+<pre><code class="language-go">type Context struct {
+    *ir.Block
+    parent *Context
+    vars   map[string]value.Value
+}
+
+func NewContext(b *ir.Block) *Context {
+    return &amp;Context{
+        Block: b,
+        parent:   nil,
+        vars:     make(map[string]value.Value),
+    }
+}
+
+func (c *Context) NewContext(b *ir.Block) *Context {
+    ctx := NewContext(b)
+    ctx.parent = c
+    return ctx
+}
+
+func (c Context) lookupVariable(name string) value.Value {
+    if v, ok := c.vars[name]; ok {
+        return v
+    } else if c.parent != nil {
+        return c.parent.lookupVariable(name)
+    } else {
+        fmt.Printf(&quot;variable: `%s`\n&quot;, name)
+        panic(&quot;no such variable&quot;)
+    }
+}
+</code></pre>
+<p>Finally, we would have some simple statement as placeholder:</p>
+<pre><code class="language-go">type Stmt interface{ isStmt() Stmt }
+type SDefine struct {
+    Stmt
+    Name string
+    Typ  types.Type
+    Expr Expr
+}
+type SRet struct {
+    Stmt
+    Val Expr
+}
+</code></pre>
+<p>Then compile:</p>
+<pre><code class="language-go">func (ctx *Context) compileStmt(stmt Stmt) {
+    if ctx.Parent != nil {
+        return
+    }
+    f := ctx.Parent
+    switch s := stmt.(type) {
+    case *SDefine:
+        v := ctx.NewAlloca(s.Typ)
+        ctx.NewStore(ctx.compileExpr(s.Expr), v)
+        ctx.vars[s.Name] = v
+    case *SRet:
+        ctx.NewRet(ctx.compileExpr(s.Val))
+    }
+}
+</code></pre>
+<h3 id="if">If</h3>
+<p>Since we can let:</p>
+<pre><code class="language-go">if condition {
+    // A
+} else if condition {
+    // B
+} else {
+    // C
+}
+</code></pre>
+<p>became:</p>
+<pre><code class="language-go">if condition {
+    // A
+} else {
+    if condition {
+        // B
+    } else {
+        // C
+    }
+}
+</code></pre>
+<p>We don't have to convert any <strong>else-if</strong> pattern. Therefore, our <code>If</code> looks like this:</p>
+<pre><code class="language-go">type SIf struct {
+    Stmt
+    Cond Expr
+    Then Stmt
+    Else Stmt
+}
+</code></pre>
+<p>Then we can get transformers to generate control flow <strong>if</strong>. Using <strong>conditional jump</strong> to generate <strong>if</strong> statement:</p>
+<pre><code class="language-go">func (ctx *Context) compileStmt(stmt Stmt) {
+    switch s := stmt.(type) {
+    case *SIf:
+        thenCtx := ctx.NewContext(f.NewBlock(&quot;if.then&quot;))
+        thenCtx.compileStmt(s.Then)
+        elseB := f.NewBlock(&quot;if.else&quot;)
+        ctx.NewContext(elseB).compileStmt(s.Else)
+        ctx.NewCondBr(ctx.compileExpr(s.Cond), thenCtx.Block, elseB)
+        if !thenCtx.HasTerminator() {
+            leaveB := f.NewBlock(&quot;leave.if&quot;)
+            thenCtx.NewBr(leaveB)
+        }
+    }
+}
+</code></pre>
+<p>When generating <strong>if</strong>, the most important thing is <strong>leave block</strong>, when if-then block complete, a jump to skip else block required since there has no <strong>block</strong> in high-level language liked concept in LLVM IR. At the end of a basic-block can be a return and since return would terminate a function, jump after return is a dead code, so we have to check we have to generate <strong>leave block</strong> or not. Here is a small example as usage:</p>
+<pre><code class="language-go">f := ir.NewFunc(&quot;foo&quot;, types.Void)
+bb := f.NewBlock(&quot;&quot;)
+
+ctx.compileStmt(&amp;SIf{
+    Cond: &amp;EBool{V: true},
+    Then: &amp;SRet{Val: &amp;EVoid{}},
+    Else: &amp;SRet{Val: &amp;EVoid{}},
+})
+</code></pre>
+<p>Finally, we get:</p>
+<pre><code class="language-llvm">define void @foo() {
+0:
+    br i1 true, label %if.then, label %if.else
+
+if.then:
+    ret void
+
+if.else:
+    ret void
+}
+</code></pre>
+<p>We didn't support else-if directly at here, then we need to know how to handle this via parsing. First, we handle a sequence of <code>if</code> <code>(</code> <code>&lt;expr&gt;</code> <code>)</code> <code>&lt;block&gt;</code>. Ok, we can fill AST with <code>Cond</code> and <code>Then</code>, now we should get a token <code>else</code>, then we expect a <code>&lt;block&gt;</code> or <code>if</code>. When we get a <code>&lt;block&gt;</code> this is a obviously can be use as <code>Else</code>, else a <code>if</code> we keep parsing and use it as <code>Else</code> statement since <code>if</code> for sure is a statement. Of course, with this method, generated IR would have some useless label and jump, but flow analyzing should optimize them later, so it's fine.</p>
+<h3 id="switch">Switch</h3>
+<p>LLVM has <a href="https://llvm.org/docs/LangRef.html#switch-instruction">switch instruction</a>, hence, we can use it directly.</p>
+<pre><code class="language-go">type SSwitch struct {
+    Stmt
+    Target   Expr
+    CaseList []struct {
+        EConstant // LLVM IR only takes constant, if you want advanced switch semantic, then you can't directly use this approach
+        Stmt
+    }
+    DefaultCase Stmt
+}
+
+func (ctx *Context) compileStmt(stmt Stmt) {
+    switch s := stmt.(type) {
+    case *SSwitch:
+        cases := []*ir.Case{}
+        for _, ca := range s.CaseList {
+            caseB := f.NewBlock(&quot;switch.case&quot;)
+            ctx.NewContext(caseB).compileStmt(ca.Stmt)
+            cases = append(cases, ir.NewCase(compileConstant(ca.EConstant), caseB))
+        }
+        defaultB := f.NewBlock(&quot;switch.default&quot;)
+        ctx.NewContext(defaultB).compileStmt(s.DefaultCase)
+        ctx.NewSwitch(ctx.compileExpr(s.Target), defaultB, cases...)
+    }
+}
+</code></pre>
+<p>For every case, we generate a block, then we can jump to target. Then we put statements into case blocks. Finally, we generate switch for the input block. Notice that, switch instruction of LLVM won't generate <code>break</code> automatically, you can use the same trick in the previous section <strong>If</strong> to generate auto leave block for each case(Go semantic), or record leave block and introduces break statement(C semantic). Now let's test it:</p>
+<pre><code class="language-go">f := ir.NewFunc(&quot;foo&quot;, types.Void)
+ctx := NewContext(f.NewBlock(&quot;&quot;))
+
+ctx.compileStmt(&amp;SSwitch{
+    Target: &amp;EBool{V: true},
+    CaseList: []struct {
+        EConstant
+        Stmt
+    }{
+        {EConstant: &amp;EBool{V: true}, Stmt: &amp;SRet{Val: &amp;EVoid{}}},
+    },
+    DefaultCase: &amp;SRet{Val: &amp;EVoid{}},
+})
+</code></pre>
+<p>And output:</p>
+<pre><code class="language-llvm">define void @foo() {
+0:
+    switch i1 true, label %switch.default [
+        i1 true, label %switch.case
+    ]
+
+switch.case:
+    ret void
+
+switch.default:
+    ret void
+}
+</code></pre>
+<p>The switch statement in this section is quite naive, for advanced semantic like pattern matching with extraction or where clause, you would need to do more.</p>
+<h3 id="loop">Loop</h3>
+<h4 id="break">Break</h4>
+<p>Break statement needs to extend <code>Context</code>, with a new field called <code>leaveBlock</code>:</p>
+<pre><code class="language-go">type Context struct {
+    // ...
+    leaveBlock *ir.Block
+}
+
+func NewContext(b *ir.Block) *Context {
+    return &amp;Context{
+        // ...
+        leaveBlock: nil,
+    }
+}
+</code></pre>
+<p>Then it's just a jump:</p>
+<pre><code class="language-go">func (ctx *Context) compileStmt(stmt Stmt) {
+    switch s := stmt.(type) {
+    case *SBreak:
+        ctx.NewBr(ctx.leaveBlock)
+    }
+}
+</code></pre>
+<p>Remember to update leave block information(and remove it when needed), and continue can be done in the same way.</p>
+<h4 id="do-while">Do While</h4>
+<p>Do while is the simplest loop structure since it's code structure almost same to the IR structure. Here we go:</p>
+<pre><code class="language-go">type SDoWhile struct {
+    Stmt
+    Cond  Expr
+    Block Stmt
+}
+
+func (ctx *Context) compileStmt(stmt Stmt) {
+    switch s := stmt.(type) {
+    case *SDoWhile:
+        doCtx := ctx.NewContext(f.NewBlock(&quot;do.while.body&quot;))
+        ctx.NewBr(doCtx.Block)
+        leaveB := f.NewBlock(&quot;leave.do.while&quot;)
+        doCtx.leaveBlock = leaveB
+        doCtx.compileStmt(s.Block)
+        doCtx.NewCondBr(doCtx.compileExpr(s.Cond), doCtx.Block, leaveB)
+    }
+}
+</code></pre>
+<p>Can see that, we jump to do-while body directly. Then we have a leave block, in the end of the do-while body we jump out to leave block or body again depends on condition. Let's test it:</p>
+<pre><code class="language-go">f := ir.NewFunc(&quot;foo&quot;, types.Void)
+ctx := NewContext(f.NewBlock(&quot;&quot;))
+
+ctx.compileStmt(&amp;SDoWhile{
+    Cond: &amp;EBool{V: true},
+    Block: &amp;SDefine{
+        Stmt: nil,
+        Name: &quot;foo&quot;,
+        Typ:  types.I32,
+        Expr: &amp;EI32{V: 1},
+    },
+})
+
+f.Blocks[len(f.Blocks)-1].NewRet(nil)
+</code></pre>
+<p>And output:</p>
+<pre><code class="language-llvm">define void @foo() {
+0:
+    br label %do.while.body
+
+do.while.body:
+    %1 = alloca i32
+    store i32 1, i32* %1
+    br i1 true, label %do.while.body, label %leave.do.while
+
+leave.do.while:
+    ret void
+}
+</code></pre>
+<h4 id="for-loop">For Loop</h4>
+<p>For-loop would be an interesting case, at here, I only present a for-loop that can only have one initialize variable to reduce complexity, therefore, we have a AST like this:</p>
+<pre><code class="language-go">type SForLoop struct {
+    Stmt
+    InitName string
+    InitExpr Expr
+    Step     Expr
+    Cond     Expr
+    Block    Stmt
+}
+</code></pre>
+<p>For example, <code>for (x=0; x=x+1; x&lt;10) {}</code> break down to:</p>
+<pre><code class="language-go">SForLoop {
+    InitName: `x`
+    InitExpr: `0`
+    Step: `x + 1`
+    Cond: `x &lt; 10`
+    Block: `{}`
+}
+</code></pre>
+<p>At first view, people might think for-loop is as easy as do-while, but in SSA form, reuse variable in a loop need a new instruction: <a href="https://llvm.org/docs/LangRef.html#i-phi">phi</a>.</p>
+<pre><code class="language-go">func (ctx *Context) compileStmt(stmt Stmt) {
+    switch s := stmt.(type) {
+    case *SForLoop:
+        loopCtx := ctx.NewContext(f.NewBlock(&quot;for.loop.body&quot;))
+        ctx.NewBr(loopCtx.Block)
+        firstAppear := loopCtx.NewPhi(ir.NewIncoming(loopCtx.compileExpr(s.InitExpr), ctx.Block))
+        loopCtx.vars[s.InitName] = firstAppear
+        step := loopCtx.compileExpr(s.Step)
+        firstAppear.Incs = append(firstAppear.Incs, ir.NewIncoming(step, loopCtx.Block))
+        loopCtx.vars[s.InitName] = step
+        leaveB := f.NewBlock(&quot;leave.for.loop&quot;)
+        loopCtx.leaveBlock = leaveB
+        loopCtx.compileStmt(s.Block)
+        loopCtx.NewCondBr(loopCtx.compileExpr(s.Cond), loopCtx.Block, leaveB)
+    }
+}
+</code></pre>
+<ol>
+<li>Create a loop body context</li>
+<li>jump from the previous block</li>
+<li>Put phi into loop body</li>
+<li>Phi would have two incoming, first is <code>InitExpr</code>, the second one is <code>Step</code> result.</li>
+<li>compile step</li>
+<li>compile the conditional branch, jump to loop body or leave block</li>
+</ol>
+<p>Testing:</p>
+<pre><code class="language-go">f := ir.NewFunc(&quot;foo&quot;, types.Void)
+ctx := NewContext(f.NewBlock(&quot;&quot;))
+
+ctx.compileStmt(&amp;SForLoop{
+    InitName: &quot;x&quot;,
+    InitExpr: &amp;EI32{V: 0},
+    Step:     &amp;EAdd{Lhs: &amp;EVariable{Name: &quot;x&quot;}, Rhs: &amp;EI32{V: 1}},
+    Cond:     &amp;ELessThan{Lhs: &amp;EVariable{Name: &quot;x&quot;}, Rhs: &amp;EI32{V: 10}},
+    Block:    &amp;SDefine{Name: &quot;foo&quot;, Typ: types.I32, Expr: &amp;EI32{V: 2}},
+})
+
+f.Blocks[len(f.Blocks)-1].NewRet(nil)
+</code></pre>
+<p>The test generates:</p>
+<pre><code class="language-llvm">define void @foo() {
+0:
+    br label %for.loop.body
+
+for.loop.body:
+    %1 = phi i32 [ 0, %0 ], [ %2, %for.loop.body ]
+    %2 = add i32 %1, 1
+    %3 = alloca i32
+    store i32 2, i32* %3
+    %4 = icmp slt i32 %2, 10
+    br i1 %4, label %for.loop.body, label %leave.for.loop
+
+leave.for.loop:
+    ret void
+}
+</code></pre>
+<p>In fact, you can also avoid phi, you can make a try as practice.</p>
+<h4 id="while">While</h4>
+<p>The last kind of loop we want to present is <strong>while</strong> loop.</p>
+<pre><code class="language-go">type SWhile struct {
+    Stmt
+    Cond  Expr
+    Block Stmt
+}
+</code></pre>
+<p>It looks just like <strong>do while</strong>, but have different semantic, it might not execute it's body. Here is the implementation.</p>
+<pre><code class="language-go">func (ctx *Context) compileStmt(stmt Stmt) {
+    switch s := stmt.(type) {
+    case *SWhile:
+        condCtx := ctx.NewContext(f.NewBlock(&quot;while.loop.cond&quot;))
+        ctx.NewBr(condCtx.Block)
+        loopCtx := ctx.NewContext(f.NewBlock(&quot;while.loop.body&quot;))
+        leaveB := f.NewBlock(&quot;leave.do.while&quot;)
+        condCtx.NewCondBr(condCtx.compileExpr(s.Cond), loopCtx.Block, leaveB)
+        condCtx.leaveBlock = leaveB
+        loopCtx.leaveBlock = leaveB
+        loopCtx.compileStmt(s.Block)
+        loopCtx.NewBr(condCtx.Block)
+    }
+}
+</code></pre>
+<p>We would need two blocks since <code>br</code> is a terminator, then the logic is simple:</p>
+<ol>
+<li><code>while.loop.cond</code> would jump to <code>while.loop.body</code> or <code>leave.do.while</code> by condition</li>
+<li><code>while.loop.body</code> always back to <code>while.loop.cond</code>.</li>
+</ol>
+<p>Finally, test:</p>
+<pre><code class="language-go">f := ir.NewFunc(&quot;foo&quot;, types.Void)
+ctx := NewContext(f.NewBlock(&quot;&quot;))
+
+ctx.compileStmt(&amp;SWhile{
+    Cond: &amp;EBool{V: true},
+    Block: &amp;SDefine{
+        Name: &quot;x&quot;,
+        Typ:  types.I32,
+        Expr: &amp;EI32{V: 0},
+    },
+})
+
+f.Blocks[len(f.Blocks)-1].NewRet(nil)
+</code></pre>
+<p>and output:</p>
+<pre><code class="language-llvm">define void @foo() {
+0:
+    br label %while.loop.cond
+
+while.loop.cond:
+    br i1 true, label %while.loop.body, label %leave.do.while
+
+while.loop.body:
+    %1 = alloca i32
+    store i32 0, i32* %1
+    br label %while.loop.cond
+
+leave.do.while:
+    ret void
+}
+</code></pre>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="basic.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Basic Introduction" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Basic Introduction
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="funcs.html" class="md-footer__link md-footer__link--next" aria-label="Next: More Function" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              More Function
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+        
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.477d984a.min.js", "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.82b56eb2.min.js"></script>
+      
+    
+  </body>
+</html>
