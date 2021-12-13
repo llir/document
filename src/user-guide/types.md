@@ -2,12 +2,9 @@
 
 ## Structure
 
-Structure is quite common and basic type in programming language.
-Here focus on how to create an equal LLVM mapping for structure.
+Structure is quite common and basic type in programming language. Here focus on how to create an equal LLVM mapping for structure.
 
-LLVM has the concept about structure type, but structure type in LLVM didn't have field name, how to get/set fields of structure would be a thing.
-Let's assume a structure: `foo` has a field named `x` with type `i32`.
-Below code shows how to access `x`.
+LLVM has the concept about structure type, but structure type in LLVM didn't have field name, how to get/set fields of structure would be a thing. Let's assume a structure: `foo` has a field named `x` with type `i32`. Below code shows how to access `x`.
 
 ```go
 zero := constant.NewInt(types.I32, 0)
@@ -30,6 +27,66 @@ It computes a pointer to any structure member with no overhead.
 Then `load` and `store` can work on it.
 
 To get more information about GEP can goto [Lang Ref](https://llvm.org/docs/LangRef.html#getelementptr-instruction).
+
+## Array
+
+Arrays are a sequence of elements of the same types in LLVM. And in LLVM, array size is a constant that never changes. In the following text, I will present how to define a global array, and how to operate it.
+
+As usual, we need a module and some helping code
+
+```go
+mod := ir.NewModule()
+printf := PrintfPlugin(mod)
+formatString := "array_def[%d]: %d\n"
+fmtStr := mod.NewGlobalDef("x", constant.NewCharArrayFromString(formatString))
+main := mod.NewFunc("main", types.I32)
+mainB := main.NewBlock("")
+ptrToStr := mainB.NewGetElementPtr(types.NewArray(uint64(len(formatString)), types.I8), fmtStr, CI32(0), CI32(0))
+```
+
+Now we create a global array
+
+```go
+arrTy := types.NewArray(5, types.I8)
+arrayDef := mod.NewGlobalDef("array_def", constant.NewArray(arrTy, CI8(1), CI8(2), CI8(3), CI8(4), CI8(5)))
+```
+
+Then we can load it into stack, in the following code, we
+
+1. extract value from loaded array
+2. insert value into loaded array
+
+```go
+arr := mainB.NewLoad(arrTy, arrayDef)
+for i := 0; i < 5; i++ {
+	mainB.NewCall(printf, ptrToStr, CI32(int64(i)), mainB.NewExtractValue(arr, uint64(i)))
+	mainB.NewInsertValue(arr, CI8(0), uint64(i))
+	mainB.NewCall(printf, ptrToStr, CI32(int64(i)), mainB.NewExtractValue(arr, uint64(i)))
+}
+```
+
+Another way to get element and update it is using get element pointer(a.k.a GEP)
+
+```go
+for i := 0; i < 5; i++ {
+	pToElem := mainB.NewGetElementPtr(arrTy, arrayDef, CI32(0), CI32(int64(i)))
+	mainB.NewCall(printf, ptrToStr, CI32(int64(i)), mainB.NewLoad(types.I8, pToElem))
+	mainB.NewStore(CI8(0), pToElem)
+	mainB.NewCall(printf, ptrToStr, CI32(int64(i)), mainB.NewLoad(types.I8, pToElem))
+}
+```
+
+compare with previous result, you will find previous insert didn't work as expected. So this is the key point about insert value. It don't update your aggregate value, it do thing like immutable programming: take and return new one. Thus, we should write
+
+```go
+for i := 0; i < 5; i++ {
+	mainB.NewCall(printf, ptrToStr, CI32(int64(i)), mainB.NewExtractValue(arr, uint64(i)))
+	newArr := mainB.NewInsertValue(arr, CI8(0), uint64(i))
+	mainB.NewCall(printf, ptrToStr, CI32(int64(i)), mainB.NewExtractValue(newArr, uint64(i)))
+}
+```
+
+Now you should understand array enough to compile your language into this aggregate type!
 
 ## Algebra Data Type
 
