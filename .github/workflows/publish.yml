@@ -3,10 +3,10 @@ name: Publish docs via GitHub Pages
 on:
   push:
     branches: [master]
-    paths: ["**publish.yml", "**.md"]
+    paths: ["**publish.yml", "**.jl", "**.md"]
   pull_request:
     branches: ["*"]
-    paths: ["**.md"]
+    paths: ["**.jl", "**.md"]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
