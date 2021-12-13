@@ -138,7 +138,7 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 }
 ```
 
-### If
+## If
 
 Since we can let:
 
@@ -226,7 +226,7 @@ if.else:
 
 We didn't support else-if directly at here, then we need to know how to handle this via parsing. First, we handle a sequence of `if` `(` `<expr>` `)` `<block>`. Ok, we can fill AST with `Cond` and `Then`, now we should get a token `else`, then we expect a `<block>` or `if`. When we get a `<block>` this is a obviously can be use as `Else`, else a `if` we keep parsing and use it as `Else` statement since `if` for sure is a statement. Of course, with this method, generated IR would have some useless label and jump, but flow analyzing should optimize them later, so it's fine.
 
-### Switch
+## Switch
 
 LLVM has [switch instruction](https://llvm.org/docs/LangRef.html#switch-instruction), hence, we can use it directly.
 
@@ -294,9 +294,9 @@ switch.default:
 
 The switch statement in this section is quite naive, for advanced semantic like pattern matching with extraction or where clause, you would need to do more.
 
-### Loop
+## Loop
 
-#### Break
+### Break
 
 Break statement needs to extend `Context`, with a new field called `leaveBlock`:
 
@@ -327,7 +327,7 @@ func (ctx *Context) compileStmt(stmt Stmt) {
 
 Remember to update leave block information(and remove it when needed), and continue can be done in the same way.
 
-#### Do While
+### Do While
 
 Do while is the simplest loop structure since it's code structure almost same to the IR structure. Here we go:
 
@@ -387,7 +387,7 @@ leave.do.while:
 }
 ```
 
-#### For Loop
+### For Loop
 
 For-loop would be an interesting case, at here, I only present a for-loop that can only have one initialize variable to reduce complexity, therefore, we have a AST like this:
 
@@ -481,7 +481,7 @@ leave.for.loop:
 
 In fact, you can also avoid phi, you can make a try as practice.
 
-#### While
+### While
 
 The last kind of loop we want to present is **while** loop.
 

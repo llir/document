@@ -1,6 +1,6 @@
 # More Function
 
-### Linkage
+## Linkage
 
 The following code shows some linkage can use in IR.
 
@@ -35,7 +35,7 @@ declare external i64 @add4(i64)
 
 For further information about linkage, refer to [LLVM doc](https://llvm.org/docs/LangRef.html#linkage-types) and [pkg.go.dev](https://pkg.go.dev/github.com/llir/llvm/ir/enum?tab=doc#Linkage).
 
-### Variant Argument (a.k.a. VAArg)
+## Variant Argument (a.k.a. VAArg)
 
 One example of a variadic function is `printf`. This is how to create a function prototype for `printf`:
 
@@ -56,13 +56,13 @@ The above code would produce the following IR:
 declare i32 @printf(i8*, ...)
 ```
 
-### Function Overloading
+## Function Overloading
 
 There is no overloading in LLVM IR. One solution is to create one function per function signature, where each LLVM IR function would have a unique name (this is why C++ compilers do name mangling).
 
-### First-class Function(Closure)
+## First-class Function(Closure)
 
-#### Naive Implementation
+### Naive Implementation
 
 Create a closure(a.k.a. first-class function) requires a place to store captured variables. In LLVM, the best way is create a structure for such case:
 
@@ -157,7 +157,7 @@ define i32 @main() {
 
 Our `id` function captures an Integer and return it. To reach that `id_capture` was introduced for storing captured value. For passing whole closure in convenience, `id_closure` was introduced and stored capture structure and function pointer. When invoke a closure, get captured structure and function pointer from `id_closure` structure, then apply function with captured structure and additional arguments(if there's any). In this example omit the part about memory management, all structures allocated in the stack, this won't work in most real world case. Must notice this problem.
 
-#### Improvements
+### Improvements
 
 The naive implementation is not good enough, we have several ways can improve it, but instead of implementing them I'm going to list what can we do:
 
@@ -166,7 +166,7 @@ The naive implementation is not good enough, we have several ways can improve it
 - If language has copy capture and reference capture, e.g. C++?
 - What if working with a GC?
 
-### Return Structure
+## Return Structure
 
 When meet program that return structure by value, compiler has chance to remove such cloning. That's storing return structure into a reference passed by the caller. Which means, if we get:
 
@@ -193,7 +193,7 @@ define void @foo(%Foo* noalias sret f) {
 - `sret` hints this is a return value.
 - `noalias` hints other arguments won't point to the same place, LLVM optimizer might rely on such fact, so don't add it everywhere.
 
-#### Add parameter attributes
+### Add parameter attributes
 
 Here is example shows how to add parameter attributes:
 
