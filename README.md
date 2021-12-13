@@ -3,16 +3,13 @@
 ### Scripts
 
 ```shell script
-# dependencies
-make deps
-# local test
-make serve
+julia --project=. make.jl
 ```
 
 ### Update Graph(If need)
 
 ```shell script
-cd docs
+cd src
 dot -Tjpg ./classic.dot
 dot -Tjpg ./llvm.dot
 ```
