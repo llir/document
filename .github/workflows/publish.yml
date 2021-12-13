@@ -19,6 +19,10 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: "1"
+      - run: |
+          julia --project=. -e '
+            using Pkg
+            Pkg.instantiate()'
       - run: julia --project=. make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
