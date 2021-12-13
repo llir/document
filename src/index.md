@@ -20,8 +20,7 @@ To write a compiler for a new language, now we only have to focus on our fronten
 
 #### Why llir/llvm?
 
-The aim of [llir/llvm](https://github.com/llir/llvm) is to provide a library for interacting with LLVM IR in pure Go. Importantly, `llir/llvm` is not a binding for LLVM.
-Therefore, you don't have to compile LLVM (which could take a few hours), and no need to fight with Cgo.
+The aim of [llir/llvm](https://github.com/llir/llvm) is to provide a library for interacting with LLVM IR in pure Go. Importantly, `llir/llvm` is not a binding for LLVM. Therefore, you don't have to compile LLVM (which could take a few hours), and no need to fight with Cgo.
 Work under a pure Go environment and start your journey.
 
 ## Installation
