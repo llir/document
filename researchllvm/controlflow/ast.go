@@ -9,6 +9,7 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	. "github.com/llir/researchllvm/helper"
 )
 
 type Expr interface{ isExpr() Expr }
@@ -41,12 +42,12 @@ type ELessThan struct {
 func compileConstant(e EConstant) constant.Constant {
 	switch e := e.(type) {
 	case *EI32:
-		return constant.NewInt(types.I32, e.V)
+		return CI32(e.V)
 	case *EBool:
 		if e.V {
-			return constant.NewInt(types.I1, 1)
+			return CI1(1)
 		} else {
-			return constant.NewInt(types.I1, 0)
+			return CI1(0)
 		}
 	case *EVoid:
 		return nil

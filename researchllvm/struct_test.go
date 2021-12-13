@@ -29,18 +29,18 @@ func TestStruct(t *testing.T) {
 	mainB := main.NewBlock("")
 	ptrToStr := mainB.NewGetElementPtr(
 		types.NewArray(14, types.I8), helloWorldString,
-		constant.NewInt(types.I32, 0),
-		constant.NewInt(types.I32, 0),
+		CI32(0),
+		CI32(0),
 	)
 	s := mainB.NewAlloca(stringTyp)
 	sFieldCstring := mainB.NewGetElementPtr(
 		stringTyp, s,
-		constant.NewInt(types.I32, 0),
-		constant.NewInt(types.I32, 0),
+		CI32(0),
+		CI32(0),
 	)
 	mainB.NewStore(ptrToStr, sFieldCstring)
 	mainB.NewCall(printf, mainB.NewLoad(types.NewPointer(types.I8), sFieldCstring))
-	mainB.NewRet(constant.NewInt(types.I32, 0))
+	mainB.NewRet(CI32(0))
 
 	PrettyPrint(mod)
 

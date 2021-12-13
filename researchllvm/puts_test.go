@@ -6,7 +6,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
-	"github.com/llir/researchllvm/helper"
+	. "github.com/llir/researchllvm/helper"
 )
 
 func TestPuts(t *testing.T) {
@@ -26,17 +26,13 @@ func TestPuts(t *testing.T) {
 		types.I32,
 	)
 	mainB := main.NewBlock("")
-	pointerToString := mainB.NewGetElementPtr(
-		types.NewArray(14, types.I8), helloWorldString,
-		constant.NewInt(types.I32, 0),
-		constant.NewInt(types.I32, 0),
-	)
+	pointerToString := mainB.NewGetElementPtr(types.NewArray(14, types.I8), helloWorldString, CI32(0), CI32(0))
 	mainB.NewCall(puts, pointerToString)
-	mainB.NewRet(constant.NewInt(types.I32, 0))
+	mainB.NewRet(CI32(0))
 
-	helper.PrettyPrint(mod)
+	PrettyPrint(mod)
 
-	helper.ExecuteIR(mod)
+	ExecuteIR(mod)
 }
 
 // generated LLVM IR:

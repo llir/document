@@ -5,6 +5,7 @@ import (
 	"github.com/llir/llvm/ir/types"
 )
 
+func CI1(x int64) constant.Constant  { return constant.NewInt(types.I1, x) }
 func CI8(x int64) constant.Constant  { return constant.NewInt(types.I8, x) }
 func CI16(x int64) constant.Constant { return constant.NewInt(types.I16, x) }
 func CI32(x int64) constant.Constant { return constant.NewInt(types.I32, x) }

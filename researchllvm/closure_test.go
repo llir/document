@@ -12,8 +12,8 @@ import (
 func TestClosure(t *testing.T) {
 	m := ir.NewModule()
 
-	zero := constant.NewInt(types.I32, 0)
-	one := constant.NewInt(types.I32, 1)
+	zero := CI32(0)
+	one := CI32(1)
 	printf := PrintfPlugin(m)
 
 	captureStruct := m.NewTypeDef("id_capture", types.NewStruct(
@@ -33,7 +33,7 @@ func TestClosure(t *testing.T) {
 	b := mainFn.NewBlock("")
 	// define a local variable `i`
 	i := b.NewAlloca(types.I32)
-	b.NewStore(constant.NewInt(types.I32, 10), i)
+	b.NewStore(CI32(10), i)
 	// use alloca at here to simplify code, in real case should be `malloc` or `gc_malloc`
 	captureInstance := b.NewAlloca(captureStruct)
 	ptrToCapture := b.NewGetElementPtr(captureStruct, captureInstance, zero, zero)
@@ -54,7 +54,7 @@ func TestClosure(t *testing.T) {
 	pointerToString := b.NewGetElementPtr(types.NewArray(3, types.I8), printIntegerFormat, zero, zero)
 	b.NewCall(printf, pointerToString, result)
 
-	b.NewRet(constant.NewInt(types.I32, 0))
+	b.NewRet(CI32(0))
 
 	PrettyPrint(m)
 

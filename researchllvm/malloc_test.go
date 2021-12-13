@@ -4,9 +4,8 @@ import (
 	"testing"
 
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
-	"github.com/llir/researchllvm/helper"
+	. "github.com/llir/researchllvm/helper"
 )
 
 func TestMalloc(t *testing.T) {
@@ -30,11 +29,11 @@ func TestMalloc(t *testing.T) {
 		types.I32,
 	)
 	block := main.NewBlock("")
-	mallocatedSpaceRaw := block.NewCall(mallocFunc, constant.NewInt(types.I64, 128))
+	mallocatedSpaceRaw := block.NewCall(mallocFunc, CI64(128))
 	block.NewBitCast(mallocatedSpaceRaw, types.NewPointer(structType))
-	block.NewRet(constant.NewInt(types.I32, 0))
+	block.NewRet(CI32(0))
 
-	helper.PrettyPrint(mod)
+	PrettyPrint(mod)
 }
 
 // generated LLVM IR:

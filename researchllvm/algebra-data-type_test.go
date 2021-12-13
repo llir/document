@@ -4,9 +4,8 @@ import (
 	"testing"
 
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
-	"github.com/llir/researchllvm/helper"
+	. "github.com/llir/researchllvm/helper"
 )
 
 func TestAlgebraDataType(t *testing.T) {
@@ -35,20 +34,13 @@ func TestAlgebraDataType(t *testing.T) {
 	)
 	b := main.NewBlock("")
 	exprInstance := b.NewAlloca(typeExpr)
-	exprTag := b.NewGetElementPtr(typeExpr, exprInstance, constI32(0), constI32(0))
+	exprTag := b.NewGetElementPtr(typeExpr, exprInstance, CI32(0), CI32(0))
 	// set tag to 0
-	b.NewStore(constI8(0), exprTag)
+	b.NewStore(CI8(0), exprTag)
 	exprIntInstance := b.NewBitCast(exprInstance, types.NewPointer(typeExprInt))
-	exprIntValue := b.NewGetElementPtr(typeExprInt, exprIntInstance, constI32(0), constI32(1))
-	b.NewStore(constI32(2), exprIntValue)
-	b.NewRet(constI32(0))
+	exprIntValue := b.NewGetElementPtr(typeExprInt, exprIntInstance, CI32(0), CI32(1))
+	b.NewStore(CI32(2), exprIntValue)
+	b.NewRet(CI32(0))
 
-	helper.PrettyPrint(mod)
-}
-
-func constI8(v int64) constant.Constant {
-	return constant.NewInt(types.I8, v)
-}
-func constI32(v int64) constant.Constant {
-	return constant.NewInt(types.I32, v)
+	PrettyPrint(mod)
 }
