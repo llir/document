@@ -2,7 +2,16 @@ using Documenter
 
 makedocs(
     sitename = "llir/llvm",
-    format = Documenter.HTML()
+    format = Documenter.HTML(),
+    pages = [
+        "index.md",
+        "User Guide" => [
+            "user-guide/basic.md",
+            "user-guide/control.md",
+            "user-guide/funcs.md",
+            "user-guide/types.md"
+        ]
+    ]
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.
