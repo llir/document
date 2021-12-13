@@ -6,7 +6,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
-	"github.com/llir/researchllvm/helper"
+	. "github.com/llir/researchllvm/helper"
 )
 
 func TestClosure(t *testing.T) {
@@ -14,7 +14,7 @@ func TestClosure(t *testing.T) {
 
 	zero := constant.NewInt(types.I32, 0)
 	one := constant.NewInt(types.I32, 1)
-	printf := helper.PrintfPlugin(m)
+	printf := PrintfPlugin(m)
 
 	captureStruct := m.NewTypeDef("id_capture", types.NewStruct(
 		types.I32,
@@ -56,9 +56,9 @@ func TestClosure(t *testing.T) {
 
 	b.NewRet(constant.NewInt(types.I32, 0))
 
-	helper.PrettyPrint(m)
+	PrettyPrint(m)
 
-	helper.ExecuteIR(m)
+	ExecuteIR(m)
 }
 
 // generated LLVM IR:

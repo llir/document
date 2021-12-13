@@ -6,7 +6,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
-	"github.com/llir/researchllvm/helper"
+	. "github.com/llir/researchllvm/helper"
 )
 
 func TestStruct(t *testing.T) {
@@ -19,12 +19,7 @@ func TestStruct(t *testing.T) {
 		),
 	)
 
-	puts := mod.NewFunc(
-		"puts",
-		types.I32,
-		ir.NewParam("format", types.NewPointer(types.I8)),
-	)
-	puts.Sig.Variadic = true
+	printf := PrintfPlugin(mod)
 
 	helloWorldString := mod.NewGlobalDef("tmp", constant.NewCharArrayFromString("Hello, World!\n"))
 	main := mod.NewFunc(
@@ -44,12 +39,12 @@ func TestStruct(t *testing.T) {
 		constant.NewInt(types.I32, 0),
 	)
 	mainB.NewStore(ptrToStr, sFieldCstring)
-	mainB.NewCall(puts, mainB.NewLoad(types.NewPointer(types.I8), sFieldCstring))
+	mainB.NewCall(printf, mainB.NewLoad(types.NewPointer(types.I8), sFieldCstring))
 	mainB.NewRet(constant.NewInt(types.I32, 0))
 
-	helper.PrettyPrint(mod)
+	PrettyPrint(mod)
 
-	helper.ExecuteIR(mod)
+	ExecuteIR(mod)
 }
 
 // generated LLVM IR:
@@ -59,7 +54,7 @@ func TestStruct(t *testing.T) {
 //
 // @tmp = global [14 x i8] c"Hello, World!\0A"
 //
-// declare i32 @puts(i8* %format, ...)
+// declare i32 @printf(i8* %format, ...)
 //
 // define i32 @main() {
 // ; <label>:0
@@ -68,7 +63,7 @@ func TestStruct(t *testing.T) {
 // 	%3 = getelementptr %string, %string* %2, i32 0, i32 0
 // 	store i8* %1, i8** %3
 // 	%4 = load i8*, i8** %3
-// 	%5 = call i32 (i8*, ...) @puts(i8* %4)
+// 	%5 = call i32 (i8*, ...) @printf(i8* %4)
 // 	ret i32 0
 // }
 // ```
