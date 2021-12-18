@@ -1,3 +1,3 @@
 # Support
 
-You can access our helper code in https://github.com/llir/document/tree/master/researchllvm/helper
+You can access our helper code [here](https://github.com/llir/document/tree/master/researchllvm/helper).

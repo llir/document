@@ -6,11 +6,11 @@ makedocs(
     pages = [
         "index.md",
         "User Guide" => [
-            "user-guide/support.md",
             "user-guide/basic.md",
             "user-guide/control.md",
             "user-guide/funcs.md",
             "user-guide/types.md"
+            "user-guide/support.md",
         ]
     ]
 )
