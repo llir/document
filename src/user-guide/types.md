@@ -38,7 +38,7 @@ As usual, we need a module and some helping code
 mod := ir.NewModule()
 printf := PrintfPlugin(mod)
 formatString := "array_def[%d]: %d\n"
-fmtStr := mod.NewGlobalDef("x", constant.NewCharArrayFromString(formatString))
+fmtStr := mod.NewGlobalDef("x", irutil.NewCString(formatString))
 main := mod.NewFunc("main", types.I32)
 mainB := main.NewBlock("")
 ptrToStr := mainB.NewGetElementPtr(types.NewArray(uint64(len(formatString)), types.I8), fmtStr, CI32(0), CI32(0))

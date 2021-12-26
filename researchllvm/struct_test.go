@@ -3,8 +3,8 @@ package researchllvm
 import (
 	"testing"
 
+	"github.com/llir/irutil"
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	. "github.com/llir/researchllvm/helper"
 )
@@ -21,14 +21,14 @@ func TestStruct(t *testing.T) {
 
 	printf := PrintfPlugin(mod)
 
-	helloWorldString := mod.NewGlobalDef("tmp", constant.NewCharArrayFromString("Hello, World!\n"))
+	helloWorldString := mod.NewGlobalDef("tmp", irutil.NewCString("Hello, World!\n"))
 	main := mod.NewFunc(
 		"main",
 		types.I32,
 	)
 	mainB := main.NewBlock("")
 	ptrToStr := mainB.NewGetElementPtr(
-		types.NewArray(14, types.I8), helloWorldString,
+		types.NewArray(15, types.I8), helloWorldString,
 		CI32(0),
 		CI32(0),
 	)

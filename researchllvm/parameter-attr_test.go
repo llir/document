@@ -17,7 +17,7 @@ func TestParameterAttr(t *testing.T) {
 	))
 	retS := ir.NewParam("result", fooTyp)
 	retS.Attrs = append(retS.Attrs, enum.ParamAttrNoAlias)
-	retS.Attrs = append(retS.Attrs, enum.ParamAttrSRet)
+	retS.Attrs = append(retS.Attrs, enum.ParamAttrImmArg)
 	m.NewFunc("foo", types.Void, retS)
 
 	helper.PrettyPrint(m)

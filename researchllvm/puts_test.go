@@ -3,8 +3,8 @@ package researchllvm
 import (
 	"testing"
 
+	"github.com/llir/irutil"
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	. "github.com/llir/researchllvm/helper"
 )
@@ -12,7 +12,7 @@ import (
 func TestPuts(t *testing.T) {
 	mod := ir.NewModule()
 
-	helloWorldString := mod.NewGlobalDef("tmp", constant.NewCharArrayFromString("Hello, World!\n"))
+	helloWorldString := mod.NewGlobalDef("tmp", irutil.NewCString("Hello, World!\n"))
 
 	puts := mod.NewFunc(
 		"puts",
@@ -26,7 +26,7 @@ func TestPuts(t *testing.T) {
 		types.I32,
 	)
 	mainB := main.NewBlock("")
-	pointerToString := mainB.NewGetElementPtr(types.NewArray(14, types.I8), helloWorldString, CI32(0), CI32(0))
+	pointerToString := mainB.NewGetElementPtr(types.NewArray(15, types.I8), helloWorldString, CI32(0), CI32(0))
 	mainB.NewCall(puts, pointerToString)
 	mainB.NewRet(CI32(0))
 

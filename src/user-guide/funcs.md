@@ -106,7 +106,7 @@ accessCapture := b.NewGetElementPtr(idClosureTyp, idClosure, zero, zero)
 accessFunc := b.NewGetElementPtr(idClosureTyp, idClosure, zero, one)
 result := b.NewCall(b.NewLoad(idFn.Type(), accessFunc), b.NewLoad(captureTyp, accessCapture))
 
-printIntegerFormat := m.NewGlobalDef("tmp", constant.NewCharArrayFromString("%d\n"))
+printIntegerFormat := m.NewGlobalDef("tmp", irutil.NewCString("%d\n"))
 pointerToString := b.NewGetElementPtr(types.NewArray(3, types.I8), printIntegerFormat, zero, zero)
 // ignore printf
 b.NewCall(printf, pointerToString, result)

@@ -3,8 +3,8 @@ package researchllvm
 import (
 	"testing"
 
+	"github.com/llir/irutil"
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	. "github.com/llir/researchllvm/helper"
 )
@@ -50,8 +50,8 @@ func TestClosure(t *testing.T) {
 	accessFunc := b.NewGetElementPtr(idClosureTyp, idClosure, zero, one)
 	result := b.NewCall(b.NewLoad(idFn.Type(), accessFunc), b.NewLoad(captureTyp, accessCapture))
 
-	printIntegerFormat := m.NewGlobalDef("tmp", constant.NewCharArrayFromString("%d\n"))
-	pointerToString := b.NewGetElementPtr(types.NewArray(3, types.I8), printIntegerFormat, zero, zero)
+	printIntegerFormat := m.NewGlobalDef("tmp", irutil.NewCString("%d\n"))
+	pointerToString := b.NewGetElementPtr(types.NewArray(4, types.I8), printIntegerFormat, zero, zero)
 	b.NewCall(printf, pointerToString, result)
 
 	b.NewRet(CI32(0))

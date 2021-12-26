@@ -3,6 +3,7 @@ package researchllvm
 import (
 	"testing"
 
+	"github.com/llir/irutil"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
@@ -19,11 +20,11 @@ func TestArray(t *testing.T) {
 
 	printf := PrintfPlugin(mod)
 
-	fmtStr := mod.NewGlobalDef("x", constant.NewCharArrayFromString(formatString))
+	fmtStr := mod.NewGlobalDef("x", irutil.NewCString(formatString))
 	main := mod.NewFunc("main", types.I32)
 	mainB := main.NewBlock("")
 	ptrToStr := mainB.NewGetElementPtr(
-		types.NewArray(uint64(len(formatString)), types.I8), fmtStr,
+		types.NewArray(uint64(len(formatString)+1), types.I8), fmtStr,
 		CI32(0), CI32(0),
 	)
 	arr := mainB.NewLoad(arrTy, arrayDef)
