@@ -82,22 +82,15 @@ func TestException(t *testing.T) {
 	tid_int.Tail = enum.TailTail
 	tst_int := exceptionRetB.NewICmp(enum.IPredEQ, exc_sel, tid_int)
 	catchintB := main.NewBlock("catchint")
-	filterorcleanupB := main.NewBlock("filterorcleanup")
-	exceptionRetB.NewCondBr(tst_int, catchintB, filterorcleanupB)
+	cleanupB := main.NewBlock("cleanup")
+	cleanupB.NewResume(exc)
+	exceptionRetB.NewCondBr(tst_int, catchintB, cleanupB)
 	payload := catchintB.NewCall(m.__cxa_begin_catch, exc_ptr)
 	payload.Tail = enum.TailTail
 	payload_int := catchintB.NewBitCast(payload, TPtr(TI32))
 	retval := catchintB.NewLoad(TI32, payload_int)
 	end_catch := catchintB.NewCall(m.__cxa_end_catch)
 	end_catch.Tail = enum.TailTail
-	tst_blzero := filterorcleanupB.NewICmp(enum.IPredSLT, exc_sel, CI32(0))
-	filterB := main.NewBlock("filter")
-	cleanupB := main.NewBlock("cleanup")
-	filterorcleanupB.NewCondBr(tst_blzero, filterB, cleanupB)
-	call_unexpected := filterB.NewCall(m.__cxa_call_unexpected, exc_ptr)
-	call_unexpected.Tail = enum.TailTail
-	filterB.NewUnreachable()
-	cleanupB.NewResume(exc)
 
 	returnB := main.NewBlock("return")
 	catchintB.NewBr(returnB)
