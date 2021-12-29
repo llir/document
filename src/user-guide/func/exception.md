@@ -6,36 +6,36 @@ First, we need to setup a set of function from c++ ABI:
 
 ```go
 type ModuleWithException struct {
-	*ir.Module
-	_ZTIi                    *ir.Global
-	__cxa_allocate_exception *ir.Func
-	__cxa_throw              *ir.Func
-	__cxa_begin_catch        *ir.Func
-	__cxa_end_catch          *ir.Func
-	__cxa_call_unexpected    *ir.Func
-	llvm_eh_typeid_for       *ir.Func
+    *ir.Module
+    _ZTIi                    *ir.Global
+    __cxa_allocate_exception *ir.Func
+    __cxa_throw              *ir.Func
+    __cxa_begin_catch        *ir.Func
+    __cxa_end_catch          *ir.Func
+    __cxa_call_unexpected    *ir.Func
+    llvm_eh_typeid_for       *ir.Func
 }
 
 func NewModuleWithException() *ModuleWithException {
-	m := ir.NewModule()
-	mWithE := &ModuleWithException{
-		Module: m,
-		_ZTIi:  m.NewGlobal("_ZTIi", TPtr(TI8)),
-		__cxa_allocate_exception: m.NewFunc("__cxa_allocate_exception", TPtr(TI8),
-			ir.NewParam("", TI64),
-		),
-		__cxa_throw: m.NewFunc("__cxa_throw", TVoid,
-			ir.NewParam("exception_header", TPtr(TI8)),
-			ir.NewParam("", TPtr(TI8)),
-			ir.NewParam("", TPtr(TI8)),
-		),
-		__cxa_begin_catch:     m.NewFunc("__cxa_begin_catch", TPtr(TI8), ir.NewParam("", TPtr(TI8))),
-		__cxa_end_catch:       m.NewFunc("__cxa_end_catch", TVoid),
-		__cxa_call_unexpected: m.NewFunc("__cxa_call_unexpected", TVoid, ir.NewParam("", TPtr(TI8))),
-		llvm_eh_typeid_for:    m.NewFunc("llvm.eh.typeid.for", TI32, ir.NewParam("", TPtr(TI8))),
-	}
-	mWithE._ZTIi.Linkage = enum.LinkageExternal
-	return mWithE
+    m := ir.NewModule()
+    mWithE := &ModuleWithException{
+        Module: m,
+        _ZTIi:  m.NewGlobal("_ZTIi", TPtr(TI8)),
+        __cxa_allocate_exception: m.NewFunc("__cxa_allocate_exception", TPtr(TI8),
+            ir.NewParam("", TI64),
+        ),
+        __cxa_throw: m.NewFunc("__cxa_throw", TVoid,
+            ir.NewParam("exception_header", TPtr(TI8)),
+            ir.NewParam("", TPtr(TI8)),
+            ir.NewParam("", TPtr(TI8)),
+        ),
+        __cxa_begin_catch:     m.NewFunc("__cxa_begin_catch", TPtr(TI8), ir.NewParam("", TPtr(TI8))),
+        __cxa_end_catch:       m.NewFunc("__cxa_end_catch", TVoid),
+        __cxa_call_unexpected: m.NewFunc("__cxa_call_unexpected", TVoid, ir.NewParam("", TPtr(TI8))),
+        llvm_eh_typeid_for:    m.NewFunc("llvm.eh.typeid.for", TI32, ir.NewParam("", TPtr(TI8))),
+    }
+    mWithE._ZTIi.Linkage = enum.LinkageExternal
+    return mWithE
 }
 ```
 
@@ -44,15 +44,15 @@ And a helper for throw exception from a block:
 ```go
 func throwException(m *ModuleWithException, bb *ir.Block) {
     // C++ requires one allocate an exception first
-	payload := bb.NewCall(m.__cxa_allocate_exception, CI64(4))
+    payload := bb.NewCall(m.__cxa_allocate_exception, CI64(4))
     // now we stores I32 `1` into payload
-	bb.NewStore(CI32(1), bb.NewBitCast(payload, TPtr(TI32)))
+    bb.NewStore(CI32(1), bb.NewBitCast(payload, TPtr(TI32)))
     // finally, we call `__cxa_throw` to throw exception
-	bb.NewCall(m.__cxa_throw,
-		payload,
-		constant.NewBitCast(m._ZTIi, TPtr(TI8)),
-		constant.NewNull(TPtr(TI8)),
-	)
+    bb.NewCall(m.__cxa_throw,
+        payload,
+        constant.NewBitCast(m._ZTIi, TPtr(TI8)),
+        constant.NewNull(TPtr(TI8)),
+    )
 }
 ```
 
@@ -78,10 +78,10 @@ mainB.NewInvoke(exceptionThrower, []value.Value{}, normalRetB, exceptionRetB)
 normalRetB.NewRet(CI32(0))
 // landingpad stands for catch and cleanup
 exc := exceptionRetB.NewLandingPad(types.NewStruct(TPtr(TI8), TI32),
-	ir.NewClause(enum.ClauseTypeCatch, constant.NewBitCast(m._ZTIi, TPtr(TI8))),
-	ir.NewClause(enum.ClauseTypeFilter,
-		constant.NewArray(types.NewArray(1, TPtr(TI8)), constant.NewBitCast(m._ZTIi, TPtr(TI8))),
-	),
+    ir.NewClause(enum.ClauseTypeCatch, constant.NewBitCast(m._ZTIi, TPtr(TI8))),
+    ir.NewClause(enum.ClauseTypeFilter,
+        constant.NewArray(types.NewArray(1, TPtr(TI8)), constant.NewBitCast(m._ZTIi, TPtr(TI8))),
+    ),
 )
 exc.Cleanup = true
 exc_ptr := exceptionRetB.NewExtractValue(exc, 0)
