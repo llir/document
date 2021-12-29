@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>First-class Function(Closure) · llir/llvm</title><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.039/juliamono-regular.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">llir/llvm</a></span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Welcome to llir/llvm</a></li><li><span class="tocitem">User Guide</span><ul><li><a class="tocitem" href="../../basic/">Basic Introduction</a></li><li><a class="tocitem" href="../../control/">Control Flow</a></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">More Function</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../linkage/">Linkage</a></li><li><a class="tocitem" href="../vaarg/">Variant Argument (a.k.a. VAArg)</a></li><li><a class="tocitem" href="../overloading/">Function Overloading</a></li><li class="is-active"><a class="tocitem" href>First-class Function(Closure)</a><ul class="internal"><li><a class="tocitem" href="#Return-Structure"><span>Return Structure</span></a></li></ul></li><li><a class="tocitem" href="../exception/">Exception</a></li></ul></li><li><a class="tocitem" href="../../types/">High level types</a></li><li><a class="tocitem" href="../../support/">Support</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">User Guide</a></li><li><a class="is-disabled">More Function</a></li><li class="is-active"><a href>First-class Function(Closure)</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>First-class Function(Closure)</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/llir/document/blob/master/src/user-guide/func/closure.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="First-class-Function(Closure)"><a class="docs-heading-anchor" href="#First-class-Function(Closure)">First-class Function(Closure)</a><a id="First-class-Function(Closure)-1"></a><a class="docs-heading-anchor-permalink" href="#First-class-Function(Closure)" title="Permalink"></a></h1><h3 id="Naive-Implementation"><a class="docs-heading-anchor" href="#Naive-Implementation">Naive Implementation</a><a id="Naive-Implementation-1"></a><a class="docs-heading-anchor-permalink" href="#Naive-Implementation" title="Permalink"></a></h3><p>Create a closure(a.k.a. first-class function) requires a place to store captured variables. In LLVM, the best way is create a structure for such case:</p><pre><code class="language-go hljs">m := ir.NewModule()
+
+zero := constant.NewInt(types.I32, 0)
+one := constant.NewInt(types.I32, 1)
+
+captureStruct := m.NewTypeDef(&quot;id_capture&quot;, types.NewStruct(
+	types.I32,
+))
+captureTyp := types.NewPointer(captureStruct)
+idFn := m.NewFunc(&quot;id&quot;, types.I32, ir.NewParam(&quot;capture&quot;, captureTyp))
+idB := idFn.NewBlock(&quot;&quot;)
+v := idB.NewGetElementPtr(captureStruct, idFn.Params[0], zero, zero)
+idB.NewRet(idB.NewLoad(types.I32, v))
+idClosureTyp := m.NewTypeDef(&quot;id_closure&quot;, types.NewStruct(
+	captureTyp,
+	idFn.Type(),
+))
+
+mainFn := m.NewFunc(&quot;main&quot;, types.I32)
+b := mainFn.NewBlock(&quot;&quot;)
+// define a local variable `i`
+i := b.NewAlloca(types.I32)
+b.NewStore(constant.NewInt(types.I32, 10), i)
+// use alloca at here to simplify code, in real case should be `malloc` or `gc_malloc`
+captureInstance := b.NewAlloca(captureStruct)
+ptrToCapture := b.NewGetElementPtr(captureStruct, captureInstance, zero, zero)
+// capture variable
+b.NewStore(b.NewLoad(types.I32, i), ptrToCapture)
+// prepare closure
+idClosure := b.NewAlloca(idClosureTyp)
+ptrToCapturePtr := b.NewGetElementPtr(idClosureTyp, idClosure, zero, zero)
+b.NewStore(captureInstance, ptrToCapturePtr)
+ptrToFuncPtr := b.NewGetElementPtr(idClosureTyp, idClosure, zero, one)
+b.NewStore(idFn, ptrToFuncPtr)
+// assuming we transfer closure into another context
+accessCapture := b.NewGetElementPtr(idClosureTyp, idClosure, zero, zero)
+accessFunc := b.NewGetElementPtr(idClosureTyp, idClosure, zero, one)
+result := b.NewCall(b.NewLoad(idFn.Type(), accessFunc), b.NewLoad(captureTyp, accessCapture))
+
+printIntegerFormat := m.NewGlobalDef(&quot;tmp&quot;, irutil.NewCString(&quot;%d\n&quot;))
+pointerToString := b.NewGetElementPtr(types.NewArray(3, types.I8), printIntegerFormat, zero, zero)
+// ignore printf
+b.NewCall(printf, pointerToString, result)
+
+b.NewRet(constant.NewInt(types.I32, 0))</code></pre><p>This is a huge example, I understand it&#39;s hard to read, but concept is clean. It would generate below LLVM IR:</p><pre><code class="language-llvm hljs">%id_capture = type { i32 }
+%id_closure = type { %id_capture*, i32 (%id_capture*)* }
+
+@tmp = global [3 x i8] c&quot;%d\0A&quot;
+
+declare i32 @printf(i8* %format, ...)
+
+define i32 @id(%id_capture* %capture) {
+; &lt;label&gt;:0
+	%1 = getelementptr %id_capture, %id_capture* %capture, i32 0, i32 0
+	%2 = load i32, i32* %1
+	ret i32 %2
+}
+
+define i32 @main() {
+; &lt;label&gt;:0
+	%1 = alloca i32
+	store i32 10, i32* %1
+	%2 = alloca %id_capture
+	%3 = getelementptr %id_capture, %id_capture* %2, i32 0, i32 0
+	%4 = load i32, i32* %1
+	store i32 %4, i32* %3
+	%5 = alloca %id_closure
+	%6 = getelementptr %id_closure, %id_closure* %5, i32 0, i32 0
+	store %id_capture* %2, %id_capture** %6
+	%7 = getelementptr %id_closure, %id_closure* %5, i32 0, i32 1
+	store i32 (%id_capture*)* @id, i32 (%id_capture*)** %7
+	%8 = getelementptr %id_closure, %id_closure* %5, i32 0, i32 0
+	%9 = getelementptr %id_closure, %id_closure* %5, i32 0, i32 1
+	%10 = load i32 (%id_capture*)*, i32 (%id_capture*)** %9
+	%11 = load %id_capture*, %id_capture** %8
+	%12 = call i32 %10(%id_capture* %11)
+	%13 = getelementptr [3 x i8], [3 x i8]* @tmp, i32 0, i32 0
+	%14 = call i32 (i8*, ...) @printf(i8* %13, i32 %12)
+	ret i32 0
+}</code></pre><p>Our <code>id</code> function captures an Integer and return it. To reach that <code>id_capture</code> was introduced for storing captured value. For passing whole closure in convenience, <code>id_closure</code> was introduced and stored capture structure and function pointer. When invoke a closure, get captured structure and function pointer from <code>id_closure</code> structure, then apply function with captured structure and additional arguments(if there&#39;s any). In this example omit the part about memory management, all structures allocated in the stack, this won&#39;t work in most real world case. Must notice this problem.</p><h3 id="Improvements"><a class="docs-heading-anchor" href="#Improvements">Improvements</a><a id="Improvements-1"></a><a class="docs-heading-anchor-permalink" href="#Improvements" title="Permalink"></a></h3><p>The naive implementation is not good enough, we have several ways can improve it, but instead of implementing them I&#39;m going to list what can we do:</p><ul><li>Laziness function: Arity would be a thing in case</li><li>Access cross asynchronous model</li><li>If language has copy capture and reference capture, e.g. C++?</li><li>What if working with a GC?</li></ul><h2 id="Return-Structure"><a class="docs-heading-anchor" href="#Return-Structure">Return Structure</a><a id="Return-Structure-1"></a><a class="docs-heading-anchor-permalink" href="#Return-Structure" title="Permalink"></a></h2><p>When meet program that return structure by value, compiler has chance to remove such cloning. That&#39;s storing return structure into a reference passed by the caller. Which means, if we get:</p><pre><code class="language-c hljs">struct Foo {
+    // ...
+};
+
+Foo foo() {
+    Foo f;
+    // ...
+    return f;
+}</code></pre><p>should compile to:</p><pre><code class="language-llvm hljs">define void @foo(%Foo* noalias sret f) {
+    // ...
+}</code></pre><ul><li><code>sret</code> hints this is a return value.</li><li><code>noalias</code> hints other arguments won&#39;t point to the same place, LLVM optimizer might rely on such fact, so don&#39;t add it everywhere.</li></ul><h3 id="Add-parameter-attributes"><a class="docs-heading-anchor" href="#Add-parameter-attributes">Add parameter attributes</a><a id="Add-parameter-attributes-1"></a><a class="docs-heading-anchor-permalink" href="#Add-parameter-attributes" title="Permalink"></a></h3><p>Here is example shows how to add parameter attributes:</p><pre><code class="language-go hljs">m := ir.NewModule()
+
+fooTyp := m.NewTypeDef(&quot;Foo&quot;, types.NewStruct(
+	types.I32,
+))
+retS := ir.NewParam(&quot;result&quot;, fooTyp)
+retS.Attrs = append(retS.Attrs, enum.ParamAttrNoAlias)
+retS.Attrs = append(retS.Attrs, enum.ParamAttrSRet)
+m.NewFunc(&quot;foo&quot;, types.Void, retS)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overloading/">« Function Overloading</a><a class="docs-footer-nextpage" href="../exception/">Exception »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.10 on <span class="colophon-date" title="Wednesday 29 December 2021 12:39">Wednesday 29 December 2021</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

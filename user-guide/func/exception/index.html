@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Exception · llir/llvm</title><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.039/juliamono-regular.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">llir/llvm</a></span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Welcome to llir/llvm</a></li><li><span class="tocitem">User Guide</span><ul><li><a class="tocitem" href="../../basic/">Basic Introduction</a></li><li><a class="tocitem" href="../../control/">Control Flow</a></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">More Function</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../linkage/">Linkage</a></li><li><a class="tocitem" href="../vaarg/">Variant Argument (a.k.a. VAArg)</a></li><li><a class="tocitem" href="../overloading/">Function Overloading</a></li><li><a class="tocitem" href="../closure/">First-class Function(Closure)</a></li><li class="is-active"><a class="tocitem" href>Exception</a></li></ul></li><li><a class="tocitem" href="../../types/">High level types</a></li><li><a class="tocitem" href="../../support/">Support</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">User Guide</a></li><li><a class="is-disabled">More Function</a></li><li class="is-active"><a href>Exception</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Exception</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/llir/document/blob/master/src/user-guide/func/exception.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Exception"><a class="docs-heading-anchor" href="#Exception">Exception</a><a id="Exception-1"></a><a class="docs-heading-anchor-permalink" href="#Exception" title="Permalink"></a></h1><p>In this section, you will see how to reuse c++ exception in LLVM.</p><p>First, we need to setup a set of function from c++ ABI:</p><pre><code class="language-go hljs">type ModuleWithException struct {
+	*ir.Module
+	_ZTIi                    *ir.Global
+	__cxa_allocate_exception *ir.Func
+	__cxa_throw              *ir.Func
+	__cxa_begin_catch        *ir.Func
+	__cxa_end_catch          *ir.Func
+	__cxa_call_unexpected    *ir.Func
+	llvm_eh_typeid_for       *ir.Func
+}
+
+func NewModuleWithException() *ModuleWithException {
+	m := ir.NewModule()
+	mWithE := &amp;ModuleWithException{
+		Module: m,
+		_ZTIi:  m.NewGlobal(&quot;_ZTIi&quot;, TPtr(TI8)),
+		__cxa_allocate_exception: m.NewFunc(&quot;__cxa_allocate_exception&quot;, TPtr(TI8),
+			ir.NewParam(&quot;&quot;, TI64),
+		),
+		__cxa_throw: m.NewFunc(&quot;__cxa_throw&quot;, TVoid,
+			ir.NewParam(&quot;exception_header&quot;, TPtr(TI8)),
+			ir.NewParam(&quot;&quot;, TPtr(TI8)),
+			ir.NewParam(&quot;&quot;, TPtr(TI8)),
+		),
+		__cxa_begin_catch:     m.NewFunc(&quot;__cxa_begin_catch&quot;, TPtr(TI8), ir.NewParam(&quot;&quot;, TPtr(TI8))),
+		__cxa_end_catch:       m.NewFunc(&quot;__cxa_end_catch&quot;, TVoid),
+		__cxa_call_unexpected: m.NewFunc(&quot;__cxa_call_unexpected&quot;, TVoid, ir.NewParam(&quot;&quot;, TPtr(TI8))),
+		llvm_eh_typeid_for:    m.NewFunc(&quot;llvm.eh.typeid.for&quot;, TI32, ir.NewParam(&quot;&quot;, TPtr(TI8))),
+	}
+	mWithE._ZTIi.Linkage = enum.LinkageExternal
+	return mWithE
+}</code></pre><p>And a helper for throw exception from a block:</p><pre><code class="language-go hljs">func throwException(m *ModuleWithException, bb *ir.Block) {
+    // C++ requires one allocate an exception first
+	payload := bb.NewCall(m.__cxa_allocate_exception, CI64(4))
+    // now we stores I32 `1` into payload
+	bb.NewStore(CI32(1), bb.NewBitCast(payload, TPtr(TI32)))
+    // finally, we call `__cxa_throw` to throw exception
+	bb.NewCall(m.__cxa_throw,
+		payload,
+		constant.NewBitCast(m._ZTIi, TPtr(TI8)),
+		constant.NewNull(TPtr(TI8)),
+	)
+}</code></pre><p>Finally, is our full example</p><pre><code class="language-go hljs">m := NewModuleWithException()
+
+exceptionThrower := m.NewFunc(&quot;I throw exception!&quot;, TI32)
+bb := exceptionThrower.NewBlock(&quot;&quot;)
+throwException(m, bb)
+bb.NewRet(CI32(1))
+
+main := m.NewFunc(&quot;main&quot;, TI32)
+main.Personality = constant.True
+mainB := main.NewBlock(&quot;&quot;)
+normalRetB := main.NewBlock(&quot;normalRet&quot;)
+exceptionRetB := main.NewBlock(&quot;exceptionRet&quot;)
+// we must use invoke when a function might throw exception, we need to give
+// 1. normal return block for function returns normally
+// 2. exception return block for function throws an exception
+mainB.NewInvoke(exceptionThrower, []value.Value{}, normalRetB, exceptionRetB)
+normalRetB.NewRet(CI32(0))
+// landingpad stands for catch and cleanup
+exc := exceptionRetB.NewLandingPad(types.NewStruct(TPtr(TI8), TI32),
+	ir.NewClause(enum.ClauseTypeCatch, constant.NewBitCast(m._ZTIi, TPtr(TI8))),
+	ir.NewClause(enum.ClauseTypeFilter,
+		constant.NewArray(types.NewArray(1, TPtr(TI8)), constant.NewBitCast(m._ZTIi, TPtr(TI8))),
+	),
+)
+exc.Cleanup = true
+exc_ptr := exceptionRetB.NewExtractValue(exc, 0)
+exc_sel := exceptionRetB.NewExtractValue(exc, 1)
+tid_int := exceptionRetB.NewCall(m.llvm_eh_typeid_for, constant.NewBitCast(m._ZTIi, TPtr(TI8)))
+tid_int.Tail = enum.TailTail
+catchintB := main.NewBlock(&quot;catchint&quot;)
+cleanupB := main.NewBlock(&quot;cleanup&quot;)
+cleanupB.NewResume(exc)
+// we check typeinfo is as expected
+// 1. if type info is same as our expection, we going to catchint block to handle threw I32
+// 2. if not, we cleanup exception
+tst_int := exceptionRetB.NewICmp(enum.IPredEQ, exc_sel, tid_int)
+exceptionRetB.NewCondBr(tst_int, catchintB, cleanupB)
+// in catchint block, we
+// 1. call `__cxa_begin_catch` to begin catching
+// 2. load payload to get threw I32
+// 3. call `__cxa_end_catch` to end catching
+payload := catchintB.NewCall(m.__cxa_begin_catch, exc_ptr)
+payload.Tail = enum.TailTail
+payload_int := catchintB.NewBitCast(payload, TPtr(TI32))
+retval := catchintB.NewLoad(TI32, payload_int)
+end_catch := catchintB.NewCall(m.__cxa_end_catch)
+end_catch.Tail = enum.TailTail
+
+// Finally, we return threw value from main
+returnB := main.NewBlock(&quot;return&quot;)
+catchintB.NewBr(returnB)
+returnB.NewRet(retval)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../closure/">« First-class Function(Closure)</a><a class="docs-footer-nextpage" href="../../types/">High level types »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.10 on <span class="colophon-date" title="Wednesday 29 December 2021 12:39">Wednesday 29 December 2021</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
