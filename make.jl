@@ -8,7 +8,13 @@ makedocs(
         "User Guide" => [
             "user-guide/basic.md",
             "user-guide/control.md",
-            "user-guide/funcs.md",
+            "More Function" => [
+                "user-guide/func/linkage.md",
+                "user-guide/func/vaarg.md",
+                "user-guide/func/overloading.md",
+                "user-guide/func/closure.md",
+                "user-guide/func/exception.md",
+            ],
             "user-guide/types.md",
             "user-guide/support.md"
         ]
