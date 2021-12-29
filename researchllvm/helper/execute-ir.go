@@ -21,6 +21,7 @@ func ExecuteIR(mod *ir.Module) {
 	cmd := exec.Command("lli", "tmp.ll")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
+		fmt.Printf("Output:\n\n%s\n", stdoutStderr)
 		panic(err)
 	}
 	fmt.Printf("Output:\n\n%s\n", stdoutStderr)
